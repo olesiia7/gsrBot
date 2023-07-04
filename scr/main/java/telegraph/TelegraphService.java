@@ -1,6 +1,7 @@
 package telegraph;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ import web.WebManager;
 
 @Component
 @PropertySource("classpath:telegraph.properties")
+@ComponentScan(basePackageClasses = web.WebManager.class)
 public class TelegraphService {
     private final WebManager web;
 
