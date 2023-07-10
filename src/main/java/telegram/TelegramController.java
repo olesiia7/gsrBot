@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = "singleton")
 public class TelegramController {
-    public TelegramService service;
+    private final TelegramService service;
 
     public TelegramController(TelegramService service) {
         this.service = service;

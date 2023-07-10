@@ -30,6 +30,4 @@ class TelegraphControllerTest {
             Assertions.assertNotNull(page.getCreated());
         }
     }
-
-
 }

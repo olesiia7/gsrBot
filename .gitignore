@@ -23,4 +23,5 @@
 hs_err_pid*
 replay_pid*
 /.idea/
-/scr/main/resources/telegraph.properties
+/src/main/resources
+/src/main/test/SQLite/GSR_Test.db
