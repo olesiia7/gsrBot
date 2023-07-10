@@ -57,7 +57,6 @@ public class CategoriesDAO extends DAO {
         Statement stmt = connection.createStatement();
         String sql = "DELETE FROM " + getTableName() + " WHERE " + C_NAME + " = '" + name + "';";
         stmt.executeUpdate(sql);
-
     }
 
     public int getCategoriesSize() throws SQLException {

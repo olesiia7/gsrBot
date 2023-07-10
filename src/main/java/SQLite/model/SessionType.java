@@ -21,4 +21,13 @@ public enum SessionType {
     public int getId() {
         return id;
     }
+
+    public static SessionType findByName(String name) {
+        for (SessionType sessionType : SessionType.values()) {
+            if (sessionType.getName().equals(name)) {
+                return sessionType;
+            }
+        }
+        throw new IllegalArgumentException("No enum constant with name: " + name);
+    }
 }
