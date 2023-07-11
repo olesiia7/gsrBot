@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import SQLite.model.LogItem;
+import SQLite.model.Log;
+
+import static SQLite.model.LogItemFactory.toLogItem;
 
 @Component
 public class DbController {
@@ -24,8 +26,14 @@ public class DbController {
         this.logSessionTypesService = logSessionTypesService;
     }
 
-    public List<LogItem> getLogs() {
-        return logService.getLogs();
+    public List<Log> getLogs(LogsFilter filter) throws SQLException {
+        return logService.getLogs(filter);
+    }
+
+    public int addLog(Log log) throws SQLException {
+        int id = logService.addLog(toLogItem(log));
+        logSessionTypesService.addLogSessionTypes(id, log.sessionTypes());
+        return id;
     }
 
     public void createTablesIfNotExists() throws SQLException {
@@ -35,7 +43,12 @@ public class DbController {
         logSessionTypesService.createTableIfNotExists();
     }
 
-    public void deleteAllData() {
+    public void checkCategoriesAndSessionTypes() throws SQLException {
+        categoriesService.init();
+        sessionTypesService.init();
+    }
+
+    public void clearAllData() {
         logSessionTypesService.clearAllData();
         logService.clearAllData();
         categoriesService.clearAllData();

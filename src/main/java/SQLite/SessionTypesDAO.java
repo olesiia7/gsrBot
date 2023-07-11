@@ -73,7 +73,7 @@ public class SessionTypesDAO extends DAO {
 
         while (rs.next()) {
             String name = rs.getString(C_NAME);
-            final SessionType sessionType = SessionType.findByName(name);
+            SessionType sessionType = SessionType.findByName(name);
             result.add(sessionType);
         }
         return result;

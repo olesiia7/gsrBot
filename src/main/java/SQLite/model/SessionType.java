@@ -30,4 +30,13 @@ public enum SessionType {
         }
         throw new IllegalArgumentException("No enum constant with name: " + name);
     }
+
+    public static SessionType findById(int id) {
+        for (SessionType sessionType : SessionType.values()) {
+            if (sessionType.getId() == id) {
+                return sessionType;
+            }
+        }
+        throw new IllegalArgumentException("No enum constant with id: " + id);
+    }
 }

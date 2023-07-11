@@ -34,4 +34,13 @@ public enum Category {
         }
         throw new IllegalArgumentException("No enum constant with name: " + name);
     }
+
+    public static Category findById(int id) {
+        for (Category category : Category.values()) {
+            if (category.getId() == id) {
+                return category;
+            }
+        }
+        throw new IllegalArgumentException("No enum constant with id: " + id);
+    }
 }

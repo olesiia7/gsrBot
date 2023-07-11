@@ -8,4 +8,8 @@ public class LogsTable {
     public static final String C_DESCRIPTION = "description";
     public static final String C_PRICE = "price";
     public static final String C_CATEGORY_ID = "category_id";
+
+    public static String getLogField(String field) {
+        return TABLE_NAME + "." + field;
+    }
 }

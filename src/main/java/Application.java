@@ -1,7 +1,7 @@
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import conf.Manager;
 import conf.AppConfig;
+import conf.Manager;
 
 public class Application {
 
