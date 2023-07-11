@@ -35,7 +35,7 @@ public class LogSessionTypesDAOTest {
 
     @Test
     public void addCategoryTest() {
-        Set<SessionType> allSessionTypes = Set.of(SessionType.SR, SessionType.RANG, SessionType.TO_ALL);
+        Set<SessionType> allSessionTypes = Set.of(SessionType.SR, SessionType.RANG, SessionType.STRUCTURE);
         try {
             dao.addLogSessionTypes(1, allSessionTypes);
             Set<SessionType> sessionTypes = dao.getSessionTypesById(1);

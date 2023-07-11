@@ -15,6 +15,9 @@ public class LogSessionTypesService extends Service<LogSessionTypesDAO> {
     }
 
     public void addLogSessionTypes(int id, Set<SessionType> sessionTypes) throws SQLException {
+        if (sessionTypes == null || sessionTypes.isEmpty()) {
+            return;
+        }
         dao.addLogSessionTypes(id, sessionTypes);
     }
 }

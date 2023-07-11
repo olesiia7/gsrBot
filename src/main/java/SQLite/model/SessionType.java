@@ -3,8 +3,11 @@ package SQLite.model;
 public enum SessionType {
     SR("Судьба Рода", 0),
     RANG("Ранг", 1),
-    ALL("По всем полям", 2),
-    TO_ALL("По остальным полям", 3);
+    SCH1("Судьба Человечества прямая", 2),
+    SCH2("Судьба Человечества обратная", 3),
+    STRUCTURE("Структура", 4),
+    STRUCTURE_SCH1("Структура в СЧ1", 5),
+    STRUCTURE_SCH2("Структура в СЧ2", 6);
 
     private final String name;
     private final int id;

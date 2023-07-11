@@ -35,7 +35,7 @@ public class SessionTypesDAOTest {
 
     @Test
     public void addCategoryTest() {
-        Set<SessionType> allSessionTypes = Set.of(SessionType.ALL, SessionType.TO_ALL, SessionType.RANG);
+        Set<SessionType> allSessionTypes = Set.of(SessionType.RANG, SessionType.SR);
         try {
             dao.addSessionTypes(allSessionTypes);
             Set<SessionType> sessionTypes = dao.getAllSessionTypes();
@@ -51,8 +51,8 @@ public class SessionTypesDAOTest {
     @Test
     public void addDuplicateCategoryTest() {
         try {
-            dao.addSessionTypes(Set.of(SessionType.ALL));
-            dao.addSessionTypes(Set.of(SessionType.ALL));
+            dao.addSessionTypes(Set.of(SessionType.SR));
+            dao.addSessionTypes(Set.of(SessionType.SR));
         } catch (SQLException e) {
             String error = "[SQLITE_CONSTRAINT_PRIMARYKEY] A PRIMARY KEY constraint failed (UNIQUE constraint failed: session_type.id)";
             assertEquals(error, e.getMessage());
@@ -64,10 +64,10 @@ public class SessionTypesDAOTest {
     @Test
     public void deleteCategoryTest() {
         try {
-            dao.addSessionTypes(Set.of(SessionType.ALL, SessionType.RANG));
+            dao.addSessionTypes(Set.of(SessionType.SR, SessionType.RANG));
             assertEquals(dao.getSessionTypeSize(), 2);
 
-            dao.deleteSessionType(SessionType.ALL.getName());
+            dao.deleteSessionType(SessionType.SR.getName());
             assertEquals(dao.getSessionTypeSize(), 1);
 
             Set<SessionType> sessionTypes = dao.getAllSessionTypes();

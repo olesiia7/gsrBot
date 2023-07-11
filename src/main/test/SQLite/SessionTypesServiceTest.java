@@ -53,13 +53,13 @@ public class SessionTypesServiceTest {
         when(dao.getSessionTypeSize()).thenReturn(SessionType.values().length - 1);
 
         HashSet<SessionType> lessCategories = new HashSet<>(ALL_SESSION_TYPES);
-        lessCategories.remove(SessionType.ALL);
+        lessCategories.remove(SessionType.SR);
         when(dao.getAllSessionTypes()).thenReturn(lessCategories);
 
         service.init();
         Mockito.verify(dao, Mockito.times(1)).getSessionTypeSize();
         Mockito.verify(dao, Mockito.times(1)).getAllSessionTypes();
-        Mockito.verify(dao, Mockito.times(1)).addSessionTypes(Set.of(SessionType.ALL));
+        Mockito.verify(dao, Mockito.times(1)).addSessionTypes(Set.of(SessionType.SR));
         Mockito.verifyNoMoreInteractions(dao);
     }
 

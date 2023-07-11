@@ -63,8 +63,9 @@ public class LogsDAO extends DAO {
             int price = rs.getInt(C_PRICE);
             int category_id = rs.getInt(C_CATEGORY_ID);
             String sessionTypeIds = rs.getString(SESSION_TYPE_NAMES);
-            Set<SessionType> sessionTypes = new HashSet<>();
-            if (!sessionTypeIds.isEmpty()) {
+            Set<SessionType> sessionTypes = null;
+            if (sessionTypeIds != null) {
+                sessionTypes = new HashSet<>();
                 Arrays.stream(sessionTypeIds.split(","))
                         .map(Integer::valueOf)
                         .map(SessionType::findById)
