@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
+import telegraph.model.Page;
+
+import static telegram.TelegramService.formatMessage;
+
 @SpringBootTest(classes = {TelegramController.class, TelegramService.class})
 @TestPropertySource(properties = "spring.main.banner-mode=off")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -26,8 +30,11 @@ class TelegramControllerTest {
     @Test
     @Ignore // this test really post a message in chat
     public void sendMessageTest() {
-        String message = "I'm alive!";
-        controller.sendMessage(message);
+        String url = "https://telegra.ph/Aktualnoe-dr-07-10";
+        String title = "Актуальное: др";
+        Page page = new Page(url, title);
+        String formattedMessage = formatMessage(page);
+        controller.sendMessage(formattedMessage);
     }
 
 }

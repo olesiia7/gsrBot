@@ -48,6 +48,10 @@ public class DbController {
         sessionTypesService.init();
     }
 
+    public List<String> getLastSessionOrDiagnostic() throws SQLException {
+        return logService.getLastSessionOrDiagnostic();
+    }
+
     public void clearAllData() {
         logSessionTypesService.clearAllData();
         logService.clearAllData();

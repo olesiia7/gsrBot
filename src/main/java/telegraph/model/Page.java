@@ -23,6 +23,11 @@ public class Page implements TelegraphObject {
     public Page() {
     }
 
+    public Page(final String url, final String title) {
+        this.url = url;
+        this.title = title;
+    }
+
     public String getUrl() {
         return url;
     }
@@ -66,7 +71,7 @@ public class Page implements TelegraphObject {
         return "Page{" +
                 "url='" + url + '\'' +
                 ", title='" + title + '\'' +
-                ", created=" + created +
+                ", created=" + getCreated() +
                 '}';
     }
 }

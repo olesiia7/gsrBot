@@ -22,4 +22,11 @@ public class LogsService extends Service<LogsDAO> {
     public int addLog(LogItem logItem) throws SQLException {
         return dao.addLog(logItem);
     }
+
+    /**
+     * Получаем названия последних публикаций (их может быть несколько в одну дату)
+     */
+    public List<String> getLastSessionOrDiagnostic() throws SQLException {
+        return dao.getLastSessionOrDiagnostic();
+    }
 }

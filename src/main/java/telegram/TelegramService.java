@@ -12,6 +12,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import telegraph.model.Page;
+
 @Component
 @PropertySource("classpath:telegram.properties")
 public class TelegramService {
@@ -46,9 +48,19 @@ public class TelegramService {
     public void sendMessage(String message) {
         try {
             SendMessage sendMessage = new SendMessage(chatId, message);
+            sendMessage.setParseMode("MarkdownV2");
             bot.execute(sendMessage);
         } catch (TelegramApiException e) {
             System.out.printf("%s: Error while sending message '%s': %s\n", new Date(), message, e.getMessage());
         }
+    }
+
+    public static String formatMessage(Page page) {
+        String message = "*" + page.getTitle() + "*\n" +
+                "_" + page.getCreated().toString() + "_\n" +
+                page.getUrl();
+        message = message.replace(".", "\\.");
+        message = message.replace("-", "\\-");
+        return message;
     }
 }
