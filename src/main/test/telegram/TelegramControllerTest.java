@@ -11,7 +11,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import telegraph.model.Page;
 
-import static telegram.TelegramService.formatMessage;
+import static telegram.TelegramUtils.formatPageMessage;
 
 @SpringBootTest(classes = {TelegramController.class, TelegramService.class})
 @TestPropertySource(properties = "spring.main.banner-mode=off")
@@ -33,7 +33,7 @@ class TelegramControllerTest {
         String url = "https://telegra.ph/Aktualnoe-dr-07-10";
         String title = "Актуальное: др";
         Page page = new Page(url, title);
-        String formattedMessage = formatMessage(page);
+        String formattedMessage = formatPageMessage(page.getTitle(), page.getCreated(), page.getUrl());
         controller.sendMessage(formattedMessage);
     }
 

@@ -2,7 +2,6 @@ package conf;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -11,15 +10,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import SQLite.DbController;
 import SQLite.LogsFilter;
+import SQLite.model.Category;
 import SQLite.model.Log;
+import SQLite.model.SessionType;
 import googleCloud.CSVLogParser;
 import telegram.TelegramController;
+import telegram.model.Decision;
+import telegram.model.LogDecision;
+import telegram.model.LogWithUrl;
 import telegraph.TelegraphController;
 import telegraph.model.Page;
-import telegraph.model.PageList;
+
+import static telegram.TelegramUtils.formatPageMessage;
 
 @Component
 @PropertySource("classpath:application.properties")
@@ -35,9 +41,7 @@ public class Manager {
 
     private static ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    public void start() throws IOException, SQLException {
-        System.out.println("started");
-
+    public void start() throws IOException, SQLException, TelegramApiException {
         dbController.createTablesIfNotExists();
         dbController.checkCategoriesAndSessionTypes();
         if (createFromScratch) {
@@ -53,28 +57,52 @@ public class Manager {
         List<String> lastSessionOrDiagnostic = dbController.getLastSessionOrDiagnostic();
         System.out.printf("Последняя сессия/диагностика: %s\n", lastSessionOrDiagnostic);
 
-        List<Page> newPages = getNewPages(lastSessionOrDiagnostic);
+        List<Page> newPages = telegraphController.getNewPages(lastSessionOrDiagnostic);
+        LogWithUrl log = pageToLog(newPages.get(0));
 
+        telegramController.connectToBot();
+        telegramController.setListener(answer -> {
+            LogDecision logDecision = (LogDecision) answer;
+            if (logDecision.decision() == Decision.APPROVE) {
+                publishLogInChannel(logDecision.log());
+                System.out.println("опубликовано в канале " + logDecision.log());
+                // todo: добавить запись в БД
+            }});
+        telegramController.verifyLog(log);
     }
 
-    private List<Page> getNewPages(final List<String> lastSessionOrDiagnostic) {
-        int pagesToLoad = 0;
-        int newPagesAmount = 0;
-        List<Page> newPages = new ArrayList<>();
-        search: while (true) {
-            pagesToLoad +=5;
-            PageList pageList = telegraphController.getPageList(pagesToLoad);
-            List<Page> pages = pageList.getPages();
-            for (; newPagesAmount < pages.size(); newPagesAmount++) {
-                Page page = pages.get(newPagesAmount);
-                if (lastSessionOrDiagnostic.contains(page.getTitle())) {
-                    break search;
-                }
-                newPages.add(page);
-            }
+    private void publishLogInChannel(LogWithUrl log) {
+        String formattedMessage = formatPageMessage(log.description(), log.date(), log.url());
+        telegramController.sendMessage(formattedMessage);
+    }
+
+    private LogWithUrl pageToLog(Page page) {
+        String description = page.getTitle();
+        int price = 2600;
+        Category category = Category.SESSION;
+        SessionType sessionType = SessionType.SR;
+        if (description.contains("Диагностика")) {
+            price = 0;
+            category = Category.DIAGNOSTIC;
+            sessionType = null;
+        } else if (description.contains("СЧ1")) {
+            price = 5000;
+            sessionType = SessionType.SCH1;
+        } else if (description.contains("СЧ2")) {
+            price = 5000;
+            sessionType = SessionType.SCH2;
+        } else if (description.contains("С#") || description.contains("C#")) {
+            price = 5000;
+            sessionType = SessionType.STRUCTURE;
+        } else if (description.contains("СЧ#1")) {
+            price = 8000;
+            sessionType = SessionType.STRUCTURE_SCH1;
+        } else if (description.contains("СЧ#2")) {
+            price = 8000;
+            sessionType = SessionType.STRUCTURE_SCH2;
         }
-        System.out.printf("Новых статей: %d\n", newPagesAmount);
-        return newPages;
+
+        return new LogWithUrl(page.getCreated(), description, price, category, sessionType, page.getUrl());
     }
 
 }
