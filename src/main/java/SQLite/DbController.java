@@ -52,6 +52,14 @@ public class DbController {
         return logService.getLastSessionOrDiagnostic();
     }
 
+    public List<Log> getLastRecords(int amount) throws SQLException {
+        return logService.getLastRecords(amount);
+    }
+
+    public List<Log> getLastRecords(int amount, LogsFilter filter) throws SQLException {
+        return logService.getLastLogs(filter, amount);
+    }
+
     public void clearAllData() {
         logSessionTypesService.clearAllData();
         logService.clearAllData();

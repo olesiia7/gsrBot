@@ -2,9 +2,9 @@ package conf;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.CountDownLatch;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,9 +39,7 @@ public class Manager {
     @Autowired
     private TelegramController telegramController;
 
-    private static ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-
-    public void start() throws IOException, SQLException, TelegramApiException {
+    public void start() throws IOException, SQLException, TelegramApiException, InterruptedException {
         dbController.createTablesIfNotExists();
         dbController.checkCategoriesAndSessionTypes();
         if (createFromScratch) {
@@ -58,17 +56,32 @@ public class Manager {
         System.out.printf("Последняя сессия/диагностика: %s\n", lastSessionOrDiagnostic);
 
         List<Page> newPages = telegraphController.getNewPages(lastSessionOrDiagnostic);
-        LogWithUrl log = pageToLog(newPages.get(0));
+        List<LogWithUrl> logs = newPages.stream()
+                .map(this::pageToLog)
+                .sorted(Comparator.comparing(LogWithUrl::date))
+                .toList();
 
         telegramController.connectToBot();
+
+        for (LogWithUrl log : logs) {
+            verifyLog(log);
+        }
+    }
+
+    private synchronized void verifyLog(LogWithUrl log) throws TelegramApiException, InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
         telegramController.setListener(answer -> {
             LogDecision logDecision = (LogDecision) answer;
             if (logDecision.decision() == Decision.APPROVE) {
                 publishLogInChannel(logDecision.log());
                 System.out.println("опубликовано в канале " + logDecision.log());
                 // todo: добавить запись в БД
-            }});
+            }
+            latch.countDown();
+        });
+
         telegramController.verifyLog(log);
+        latch.await(); // ждем результата по запросу
     }
 
     private void publishLogInChannel(LogWithUrl log) {

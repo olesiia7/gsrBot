@@ -59,7 +59,7 @@ public class TelegramController {
                 case EDIT_SESSION_PRICE -> waitNewPrice(log);
                 case EDIT_CATEGORY -> waitNewCategory(log);
                 case EDIT_SESSION_TYPE -> waitNewSessionType(log);
-                case EDIT_FINISHED -> verifyLog(log);
+                case EDIT_FINISHED -> deleteMarkupAndVerifyLog(log);
             }
         });
     }

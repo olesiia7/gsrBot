@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import telegram.commands.QueryCommand;
 import telegram.model.LogWithUrl;
 
 import static telegram.MarkupFactory.BACK_MARKUP;
@@ -38,13 +39,15 @@ public class TelegramService {
     private String myId;
 
     private Bot bot;
+    private final QueryCommand queryCommand;
 
-    public TelegramService() {
+    public TelegramService(QueryCommand queryCommand) {
+        this.queryCommand = queryCommand;
     }
 
     @PostConstruct
     private void init() {
-        this.bot = new Bot(botToken, botName);
+        this.bot = new Bot(botToken, botName, queryCommand);
     }
 
     public boolean connectToBot() {

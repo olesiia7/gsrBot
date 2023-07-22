@@ -6,6 +6,8 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import telegram.commands.QueryCommand;
+
 import static telegram.TelegramUtils.addDecisionToMsg;
 import static telegram.TelegramUtils.cleanText;
 
@@ -13,9 +15,11 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private final String botName;
     private AnswerListener listener;
 
-    public Bot(String botToken, String botName) {
+    public Bot(String botToken, String botName, QueryCommand queryCommand) {
         super(botToken);
         this.botName = botName;
+
+        register(queryCommand);
     }
 
     public void setListener(AnswerListener listener) {

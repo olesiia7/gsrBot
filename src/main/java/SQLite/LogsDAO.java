@@ -40,6 +40,10 @@ public class LogsDAO extends DAO {
     private static final String ALL_COLUMNS = C_ID + "," + COLUMNS_WITHOUT_ID;
     private static final String SESSION_TYPE_NAMES = "session_type_names";
     private static final String GET_LAST_ID_SQL = "SELECT last_insert_rowid();";
+    private final String SELECT_ALL = "SELECT " + TABLE_NAME + "." + ALL_COLUMNS + ",GROUP_CONCAT(" + getSessionTypeField(SessionTypesTable.C_ID) + ") AS " + SESSION_TYPE_NAMES + "\n" +
+            "FROM " + getTableName() + "\n" +
+            "LEFT JOIN " + LogSessionTypesTable.TABLE_NAME + " ON " + getLogField(LogsTable.C_ID) + " = " + getLogSessionTypeField(LogSessionTypesTable.C_LOG_ID) + "\n" +
+            "LEFT JOIN " + SessionTypesTable.TABLE_NAME + " ON " + getLogSessionTypeField(LogSessionTypesTable.C_SESSION_TYPE_ID) + " = " + getSessionTypeField(SessionTypesTable.C_ID) + "\n";
 
     public LogsDAO(ConnectionManager connectionManager) {
         super(connectionManager.getConnection(), TABLE_NAME);
@@ -47,34 +51,52 @@ public class LogsDAO extends DAO {
 
     public List<Log> getLogs(LogsFilter filter) throws SQLException {
         Statement stmt = connection.createStatement();
-        final String sql = "SELECT " + TABLE_NAME + "." + ALL_COLUMNS + ",GROUP_CONCAT(" + getSessionTypeField(SessionTypesTable.C_ID) + ") AS " + SESSION_TYPE_NAMES + "\n" +
-                "FROM " + getTableName() + "\n" +
-                "LEFT JOIN " + LogSessionTypesTable.TABLE_NAME + " ON " + getLogField(LogsTable.C_ID) + " = " + getLogSessionTypeField(LogSessionTypesTable.C_LOG_ID) + "\n" +
-                "LEFT JOIN " + SessionTypesTable.TABLE_NAME + " ON " + getLogSessionTypeField(LogSessionTypesTable.C_SESSION_TYPE_ID) + " = " + getSessionTypeField(SessionTypesTable.C_ID) + "\n" +
+        final String sql = SELECT_ALL +
                 buildWhere(filter) +
                 "\nGROUP BY " + getLogField(C_ID);
 
         ResultSet rs = stmt.executeQuery(sql);
         List<Log> logs = new ArrayList<>();
         while (rs.next()) {
-            int id = rs.getInt(C_ID);
-            Date date = rs.getDate(C_DATE);
-            String description = rs.getString(C_DESCRIPTION);
-            int price = rs.getInt(C_PRICE);
-            int category_id = rs.getInt(C_CATEGORY_ID);
-            String sessionTypeIds = rs.getString(SESSION_TYPE_NAMES);
-            Set<SessionType> sessionTypes = null;
-            if (sessionTypeIds != null) {
-                sessionTypes = new HashSet<>();
-                Arrays.stream(sessionTypeIds.split(","))
-                        .map(Integer::valueOf)
-                        .map(SessionType::findById)
-                        .forEach(sessionTypes::add);
-            }
-            logs.add(new Log(id, date, description, price, Category.findById(category_id), sessionTypes));
+            logs.add(getLogFromResultSet(rs));
         }
         return logs;
     }
+
+    public List<Log> getLastLogs(LogsFilter filter, int amount) throws SQLException {
+        Statement stmt = connection.createStatement();
+        final String sql = SELECT_ALL +
+                buildWhere(filter) +
+                "\nGROUP BY " + getLogField(C_ID) + "\n" +
+                "ORDER BY " + C_DATE + " DESC\n" +
+                "LIMIT " + amount + ";";
+
+        ResultSet rs = stmt.executeQuery(sql);
+        List<Log> logs = new ArrayList<>();
+        while (rs.next()) {
+            logs.add(getLogFromResultSet(rs));
+        }
+        return logs;
+    }
+
+    private Log getLogFromResultSet(ResultSet rs) throws SQLException {
+        int id = rs.getInt(C_ID);
+        Date date = rs.getDate(C_DATE);
+        String description = rs.getString(C_DESCRIPTION);
+        int price = rs.getInt(C_PRICE);
+        int category_id = rs.getInt(C_CATEGORY_ID);
+        String sessionTypeIds = rs.getString(SESSION_TYPE_NAMES);
+        Set<SessionType> sessionTypes = null;
+        if (sessionTypeIds != null) {
+            sessionTypes = new HashSet<>();
+            Arrays.stream(sessionTypeIds.split(","))
+                    .map(Integer::valueOf)
+                    .map(SessionType::findById)
+                    .forEach(sessionTypes::add);
+        }
+        return new Log(id, date, description, price, Category.findById(category_id), sessionTypes);
+    }
+
 
     public List<String> getLastSessionOrDiagnostic() throws SQLException {
         Statement stmt = connection.createStatement();
@@ -97,6 +119,20 @@ public class LogsDAO extends DAO {
             return result;
         }
         throw new SQLException("Error while getting last session/diagnostic date");
+    }
+
+    public List<Log> getLastRecords(int amount) throws SQLException {
+        Statement stmt = connection.createStatement();
+        String sql = SELECT_ALL +
+                "\nGROUP BY " + getLogField(C_ID) +
+                "\nORDER BY " + C_DATE + " DESC\n" +
+                "LIMIT " + amount + ";";
+        ResultSet rs = stmt.executeQuery(sql);
+        List<Log> result = new ArrayList<>();
+        while (rs.next()) {
+            result.add(getLogFromResultSet(rs));
+        }
+        return result;
     }
 
     private String buildWhere(LogsFilter filter) {

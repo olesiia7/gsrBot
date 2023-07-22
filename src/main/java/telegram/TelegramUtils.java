@@ -26,9 +26,12 @@ public final class TelegramUtils {
     /**
      * Экранирует символы, которые давали бы ошибку при форматировании
      */
-    static String cleanText(String text) {
+    public static String cleanText(String text) {
         text = text.replace(".", "\\.");
         text = text.replace("-", "\\-");
+        text = text.replace("(", "\\(");
+        text = text.replace(")", "\\)");
+        text = text.replace("!", "\\!");
         return text;
     }
 
@@ -43,7 +46,7 @@ public final class TelegramUtils {
             msg += ", " + log.sessionType().getName();
         }
         msg += "_\n" +
-                D_F.format(log.price()) + " ₽\n" +
+                formatPriceForChannel(log.price()) + "\n" +
                 log.url();
         msg = cleanText(msg);
         return msg;
@@ -55,6 +58,10 @@ public final class TelegramUtils {
                 url;
         message = cleanText(message);
         return message;
+    }
+
+    public static String formatPriceForChannel(int price) {
+        return D_F.format(price) + " ₽";
     }
 
     public static String formatDateForChannel(Date date) {

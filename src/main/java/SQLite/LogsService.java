@@ -19,14 +19,25 @@ public class LogsService extends Service<LogsDAO> {
         return dao.getLogs(filter);
     }
 
+    public List<Log> getLastLogs(LogsFilter filter, int amount) throws SQLException {
+        return dao.getLastLogs(filter, amount);
+    }
+
     public int addLog(LogItem logItem) throws SQLException {
         return dao.addLog(logItem);
     }
 
     /**
-     * Получаем названия последних публикаций (их может быть несколько в одну дату)
+     * Получаем названия последних (по дате) публикаций (их может быть несколько в одну дату)
      */
     public List<String> getLastSessionOrDiagnostic() throws SQLException {
         return dao.getLastSessionOrDiagnostic();
+    }
+
+    /**
+     * Получаем {@code amount} последних записей
+     */
+    public List<Log> getLastRecords(int amount) throws SQLException {
+        return dao.getLastRecords(amount);
     }
 }
