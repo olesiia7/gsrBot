@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -34,17 +35,17 @@ public final class CSVLogParser {
                 continue;
             }
             //ToDo: переделать заполнение
-            SessionType sessionType = null;
+            Set<SessionType> sessionTypes = null;
             Category category;
             Optional<Category> catOpt = Arrays.stream(Category.values())
                     .filter(cat -> cat.getName().equals(categoryText))
                     .findFirst();
             if (catOpt.isEmpty()) {
                 if (categoryText.equals("По всем полям")) {
-//                    sessionType = Set.of(SessionType.SR, SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
+                    sessionTypes = Set.of(SessionType.SR, SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
                     category = Category.SESSION;
                 } else if (categoryText.equals("По остальным полям")) {
-//                    sessionType = Set.of(SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
+                    sessionTypes = Set.of(SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
                     category = Category.SESSION;
                 } else {
                     throw new IllegalArgumentException("Категории " + categoryText + " не существует");
@@ -54,12 +55,18 @@ public final class CSVLogParser {
             }
 
             if (categoryText.equals("Сессия")) {
-                sessionType = SessionType.SR;
+                sessionTypes = Set.of(SessionType.SR);
             }
             if (description.equals("Ранг")) {
-                sessionType = SessionType.RANG;
+                sessionTypes = Set.of(SessionType.RANG);
             }
-            logs.add(new Log(null, date, description, price, category, sessionType));
+            if (sessionTypes != null) {
+                for (SessionType sessionType : sessionTypes) {
+                    logs.add(new Log(null, date, description, price, category, sessionType));
+                }
+            } else {
+                logs.add(new Log(null, date, description, price, category, null));
+            }
         }
         return logs;
     }
