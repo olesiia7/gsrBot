@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -34,17 +33,18 @@ public final class CSVLogParser {
             if (categoryText.isEmpty()) {
                 continue;
             }
-            Set<SessionType> sessionTypes = null;
+            //ToDo: переделать заполнение
+            SessionType sessionType = null;
             Category category;
             Optional<Category> catOpt = Arrays.stream(Category.values())
                     .filter(cat -> cat.getName().equals(categoryText))
                     .findFirst();
             if (catOpt.isEmpty()) {
                 if (categoryText.equals("По всем полям")) {
-                    sessionTypes = Set.of(SessionType.SR, SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
+//                    sessionType = Set.of(SessionType.SR, SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
                     category = Category.SESSION;
                 } else if (categoryText.equals("По остальным полям")) {
-                    sessionTypes = Set.of(SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
+//                    sessionType = Set.of(SessionType.SCH1, SessionType.SCH2, SessionType.STRUCTURE);
                     category = Category.SESSION;
                 } else {
                     throw new IllegalArgumentException("Категории " + categoryText + " не существует");
@@ -54,12 +54,12 @@ public final class CSVLogParser {
             }
 
             if (categoryText.equals("Сессия")) {
-                sessionTypes = Set.of(SessionType.SR);
+                sessionType = SessionType.SR;
             }
             if (description.equals("Ранг")) {
-                sessionTypes = Set.of(SessionType.RANG);
+                sessionType = SessionType.RANG;
             }
-            logs.add(new Log(null, date, description, price, category, sessionTypes));
+            logs.add(new Log(null, date, description, price, category, sessionType));
         }
         return logs;
     }

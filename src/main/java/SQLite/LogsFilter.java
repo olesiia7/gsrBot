@@ -1,7 +1,6 @@
 package SQLite;
 
 import java.sql.Date;
-import java.util.Set;
 
 import javax.validation.constraints.NotNull;
 
@@ -15,14 +14,14 @@ public class LogsFilter {
     private final Date date;
     private final String description;
     private final Category category;
-    private final Set<SessionType> sessionTypes;
+    private final SessionType sessionType;
 
     private LogsFilter(Builder builder) {
         this.id = builder.id;
         this.date = builder.date;
         this.description = builder.description;
         this.category = builder.category;
-        this.sessionTypes = builder.sessionTypes;
+        this.sessionType = builder.sessionType;
     }
 
     public Integer getId() {
@@ -41,12 +40,12 @@ public class LogsFilter {
         return category;
     }
 
-    public Set<SessionType> getSessionTypes() {
-        return sessionTypes;
+    public SessionType getSessionType() {
+        return sessionType;
     }
 
     public boolean isEmpty() {
-        return id == null && date == null && description == null && category == null && sessionTypes == null;
+        return id == null && date == null && description == null && category == null && sessionType == null;
     }
 
     public static class Builder {
@@ -56,7 +55,7 @@ public class LogsFilter {
         private Date date;
         private String description;
         private Category category;
-        private Set<SessionType> sessionTypes;
+        private SessionType sessionType;
 
         public Builder() {
         }
@@ -81,11 +80,8 @@ public class LogsFilter {
             return this;
         }
 
-        public Builder setSessionTypes(@NotNull Set<SessionType> sessionTypes) {
-            if (sessionTypes.isEmpty()) {
-                return this;
-            }
-            this.sessionTypes = sessionTypes;
+        public Builder setSessionType(@NotNull SessionType sessionType) {
+            this.sessionType = sessionType;
             return this;
         }
 

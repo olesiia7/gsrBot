@@ -41,7 +41,6 @@ public class Manager {
 
     public void start() throws IOException, SQLException, TelegramApiException, InterruptedException {
         dbController.createTablesIfNotExists();
-        dbController.checkCategoriesAndSessionTypes();
         if (createFromScratch) {
             dbController.clearAllData();
             List<Log> logs = CSVLogParser.parseLogs();

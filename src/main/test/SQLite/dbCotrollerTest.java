@@ -4,7 +4,6 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +30,6 @@ class dbCotrollerTest {
     @BeforeEach
     public void setUp() throws SQLException {
         controller.createTablesIfNotExists();
-        controller.checkCategoriesAndSessionTypes();
     }
 
     @AfterEach
@@ -43,7 +41,7 @@ class dbCotrollerTest {
     public void getLogsTest() {
         try {
             Date now = Date.valueOf(LocalDate.now());
-            Log log = new Log(null, now, "desc", 2600, Category.SESSION, Set.of(SessionType.SR, SessionType.RANG));
+            Log log = new Log(null, now, "desc", 2600, Category.SESSION, SessionType.RANG);
             int id = controller.addLog(log);
 
             List<Log> logs = controller.getLogs(LogsFilter.EMPTY);

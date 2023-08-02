@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
@@ -24,7 +25,7 @@ public final class MarkupFactory {
     public static final String EDIT_CATEGORY = "Категория";
     public static final String EDIT_SESSION_TYPE = "Тип сессии";
     public static final String EDIT_SESSION_PRICE = "Цена";
-    public static final String EDIT_FINISHED = "Готово";
+    public static final String EDIT_FINISHED = "Назад";
 
     public static final ReplyKeyboardMarkup EDITING_MARKUP = getReplyMarkup(EDIT_SESSION_PRICE, EDIT_CATEGORY, EDIT_SESSION_TYPE, EDIT_FINISHED);
     public static final ReplyKeyboardMarkup BACK_MARKUP = getReplyMarkup(EDIT_FINISHED);
@@ -32,6 +33,13 @@ public final class MarkupFactory {
     public static final ReplyKeyboardMarkup EDIT_CATEGORY_MARKUP = getEditCategoryMarkup();
     public static final ReplyKeyboardMarkup EDIT_SESSION_TYPE_MARKUP = getEditSessionTypeMarkup();
 
+    public static final ReplyKeyboardRemove REMOVE_MARKUP = removeMarkup();
+
+    private static ReplyKeyboardRemove removeMarkup() {
+        ReplyKeyboardRemove remove = new ReplyKeyboardRemove();
+        remove.setRemoveKeyboard(true);
+        return remove;
+    }
     private static ReplyKeyboardMarkup getEditCategoryMarkup() {
         List<String> buttons = Arrays.stream(Category.values())
                 .map(Category::getName)

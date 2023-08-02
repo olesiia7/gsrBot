@@ -1,13 +1,13 @@
 package SQLite.model;
 
 public enum SessionType {
-    SR("Судьба Рода", 0),
-    RANG("Ранг", 1),
-    SCH1("Судьба Человечества прямая", 2),
-    SCH2("Судьба Человечества обратная", 3),
-    STRUCTURE("Структура", 4),
-    STRUCTURE_SCH1("Структура в СЧ1", 5),
-    STRUCTURE_SCH2("Структура в СЧ2", 6);
+    SR("Судьба Рода", 1),
+    RANG("Ранг", 2),
+    SCH1("Судьба Человечества прямая", 3),
+    SCH2("Судьба Человечества обратная", 4),
+    STRUCTURE("Структура", 5),
+    STRUCTURE_SCH1("Структура в СЧ1", 6),
+    STRUCTURE_SCH2("Структура в СЧ2", 7);
 
     private final String name;
     private final int id;

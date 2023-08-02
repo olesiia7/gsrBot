@@ -23,6 +23,7 @@ import static telegram.MarkupFactory.BACK_MARKUP;
 import static telegram.MarkupFactory.EDITING_MARKUP;
 import static telegram.MarkupFactory.EDIT_CATEGORY_MARKUP;
 import static telegram.MarkupFactory.EDIT_SESSION_TYPE_MARKUP;
+import static telegram.MarkupFactory.REMOVE_MARKUP;
 import static telegram.MarkupFactory.VERIFYING_MARKUP;
 import static telegram.TelegramUtils.getVerifyingMsg;
 
@@ -41,7 +42,7 @@ public class TelegramService {
     private Bot bot;
     private final QueryCommand queryCommand;
 
-    public TelegramService(QueryCommand queryCommand) {
+    public TelegramService(QueryCommand queryCommand, AddLogCommand addLogCommand) {
         this.queryCommand = queryCommand;
     }
 
@@ -70,9 +71,7 @@ public class TelegramService {
      * Для удаления клавиатуры сейчас нет решения лучше, чем выпустить сообщение
      */
     public void deleteMarkup(String message) throws TelegramApiException {
-        ReplyKeyboardRemove remove = new ReplyKeyboardRemove();
-        remove.setRemoveKeyboard(true);
-        sendMeMessage(message, remove, null, false);
+        sendMeMessage(message, REMOVE_MARKUP, null, false);
     }
 
     public void sendMessage(String message) {

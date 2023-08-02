@@ -3,8 +3,6 @@ package telegram.commands;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
@@ -48,7 +46,7 @@ public class QueryCommand extends BotCommand {
 
             sb.append("*Последняя ранговая:*\n");
             builder = new LogsFilter.Builder();
-            builder.setSessionTypes(Set.of(SessionType.RANG));
+            builder.setSessionType(SessionType.RANG);
             lastRecords = db.getLastRecords(1, builder.build());
             sb.append(toString(lastRecords.get(0))).append("\n\n");
 
@@ -90,11 +88,8 @@ public class QueryCommand extends BotCommand {
         String formattedDate = formatDateForChannel(log.date());
         String formattedPrice = formatPriceForChannel(log.price());
         String category = log.category().getName();
-        if (log.sessionTypes() != null && !log.sessionTypes().isEmpty()) {
-            category += " (" + log.sessionTypes().stream()
-                    .map(SessionType::getName)
-                    .collect(Collectors.joining(",")) +
-                            ")";
+        if (log.sessionType() != null) {
+            category += " (" + log.sessionType().getName() + ")";
         }
         return String.format("%-12s%-40s\n%-11s%-20s", formattedDate, log.description(), formattedPrice, category);
     }

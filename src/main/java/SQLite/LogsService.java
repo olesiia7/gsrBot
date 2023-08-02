@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import SQLite.model.Log;
-import SQLite.model.LogItem;
 
 @Component
 public class LogsService extends Service<LogsDAO> {
@@ -23,8 +22,8 @@ public class LogsService extends Service<LogsDAO> {
         return dao.getLastLogs(filter, amount);
     }
 
-    public int addLog(LogItem logItem) throws SQLException {
-        return dao.addLog(logItem);
+    public int addLog(Log log) throws SQLException {
+        return dao.addLog(log);
     }
 
     /**

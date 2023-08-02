@@ -14,7 +14,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import SQLite.model.Category;
 import SQLite.model.Log;
-import SQLite.model.LogItem;
+import SQLite.model.SessionType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,15 +42,15 @@ public class LogsDAOTest {
         try {
             Date now = Date.valueOf(LocalDate.now());
             String desc1 = "desc1";
-            LogItem item1 = new LogItem(now, desc1, 2600, Category.SESSION.getId());
+            Log item1 = new Log(now, desc1, 2600, Category.SESSION, SessionType.SR);
             int id1 = dao.addLog(item1);
-            Log log1 = new Log(id1, item1, null);
+            Log log1 = new Log(id1, item1);
 
             Date dayAgo = Date.valueOf(LocalDate.now().minusDays(1));
             String desc2 = "desc2";
-            LogItem item2 = new LogItem(dayAgo, desc2, 4000, Category.DIAGNOSTIC.getId());
+            Log item2 = new Log(dayAgo, desc2, 4000, Category.DIAGNOSTIC, null);
             int id2 = dao.addLog(item2);
-            Log log2 = new Log(id2, item2, null);
+            Log log2 = new Log(id2, item2);
 
             List<Log> logs = dao.getLogs(LogsFilter.EMPTY);
             assertEquals(2, logs.size());
@@ -79,6 +79,12 @@ public class LogsDAOTest {
             assertEquals(1, logs.size());
             assertEquals(log1, logs.get(0));
 
+            // session type
+            builder = new LogsFilter.Builder().setSessionType(SessionType.SR);
+            logs = dao.getLogs(builder.build());
+            assertEquals(1, logs.size());
+            assertEquals(log1, logs.get(0));
+
             // id + category
             builder  = new LogsFilter.Builder()
                     .setId(log1.id())
@@ -95,7 +101,7 @@ public class LogsDAOTest {
 
             // добавим еще одну запись
             int id3 = dao.addLog(item1);
-            Log log3 = new Log(id3, item1, null);
+            Log log3 = new Log(id3, item1);
             builder = new LogsFilter.Builder().setCategory(Category.SESSION);
             logs = dao.getLogs(builder.build());
             assertEquals(2, logs.size());
@@ -112,9 +118,9 @@ public class LogsDAOTest {
         Date date = Date.valueOf(LocalDate.now());
         String description = "description";
         int price = 2600;
-        int category_id = Category.SESSION.getId();
+        Category category = Category.SESSION;
 
-        LogItem item = new LogItem(date, description, price, category_id);
+        Log item = new Log(date, description, price, category, null);
         try {
             int id = dao.addLog(item);
             List<Log> logs = dao.getLogs(LogsFilter.EMPTY);
@@ -124,9 +130,9 @@ public class LogsDAOTest {
             assertEquals(date, log.date());
             assertEquals(description, log.description());
             assertEquals(price, log.price());
-            assertEquals(category_id, log.category().getId());
+            assertEquals(category.getId(), log.category().getId());
         } catch (SQLException e) {
-            fail(e.getMessage());
+            fail(e.getMessage() + "\n" + e.getSQLState());
         }
     }
 }
