@@ -7,7 +7,9 @@ public enum SessionType {
     SCH2("Судьба Человечества обратная", 4),
     STRUCTURE("Структура", 5),
     STRUCTURE_SCH1("Структура в СЧ1", 6),
-    STRUCTURE_SCH2("Структура в СЧ2", 7);
+    STRUCTURE_SCH2("Структура в СЧ2", 7),
+    RANG_SCH1("Ранг в СЧ1", 8),
+    RANG_SCH2("Ранг в СЧ2", 9);
 
     private final String name;
     private final int id;

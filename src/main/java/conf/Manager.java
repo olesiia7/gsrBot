@@ -4,42 +4,45 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import SQLite.DbController;
 import SQLite.LogsFilter;
 import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
+import events.VerifyAndPublishLogEvent;
 import googleCloud.CSVLogParser;
+import handlers.EventManager;
 import telegram.TelegramController;
-import telegram.model.Decision;
-import telegram.model.LogDecision;
 import telegram.model.LogWithUrl;
 import telegraph.TelegraphController;
 import telegraph.model.Page;
-
-import static telegram.TelegramUtils.formatPageMessage;
 
 @Component
 @PropertySource("classpath:application.properties")
 public class Manager {
     @Value("${create.from.scratch}")
     private boolean createFromScratch;
+    @Value("${add.new.logs}")
+    private boolean addNewLogs;
+
     @Autowired
     private TelegraphController telegraphController;
     @Autowired
     private DbController dbController;
     @Autowired
     private TelegramController telegramController;
+    @Autowired
+    private EventManager eventManager;
 
-    public void start() throws IOException, SQLException, TelegramApiException, InterruptedException {
+    public void start() throws IOException, SQLException, ExecutionException, InterruptedException {
         dbController.createTablesIfNotExists();
         if (createFromScratch) {
             dbController.clearAllData();
@@ -50,42 +53,24 @@ public class Manager {
             List<Log> dbLogs = dbController.getLogs(LogsFilter.EMPTY);
             System.out.printf("логи: %d, логи из бд: %d\n", logs.size(), dbLogs.size());
         }
-
-        List<String> lastSessionOrDiagnostic = dbController.getLastSessionOrDiagnostic();
-        System.out.printf("Последняя сессия/диагностика: %s\n", lastSessionOrDiagnostic);
-
-        List<Page> newPages = telegraphController.getNewPages(lastSessionOrDiagnostic);
-        List<LogWithUrl> logs = newPages.stream()
-                .map(this::pageToLog)
-                .sorted(Comparator.comparing(LogWithUrl::date))
-                .toList();
-
         telegramController.connectToBot();
 
-        for (LogWithUrl log : logs) {
-            verifyLog(log);
-        }
-    }
+        if (addNewLogs) {
+            List<String> lastSessionOrDiagnostic = dbController.getLastSessionOrDiagnostic();
+            System.out.printf("Последняя сессия/диагностика: %s\n", lastSessionOrDiagnostic);
 
-    private synchronized void verifyLog(LogWithUrl log) throws TelegramApiException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        telegramController.setListener(answer -> {
-            LogDecision logDecision = (LogDecision) answer;
-            if (logDecision.decision() == Decision.APPROVE) {
-                publishLogInChannel(logDecision.log());
-                System.out.println("опубликовано в канале " + logDecision.log());
-                // todo: добавить запись в БД
+            List<Page> newPages = telegraphController.getNewPages(lastSessionOrDiagnostic);
+            List<LogWithUrl> logs = newPages.stream()
+                    .map(this::pageToLog)
+                    .sorted(Comparator.comparing(l -> l.log().date()))
+                    .toList();
+
+            for (LogWithUrl logWithUrl : logs) {
+                CompletableFuture<Void> promise = new CompletableFuture<>();
+                eventManager.handleEvent(new VerifyAndPublishLogEvent(logWithUrl, promise));
+                promise.get(); // чтобы не посылать новые запросы, пока не принято решение по текущему
             }
-            latch.countDown();
-        });
-
-        telegramController.verifyLog(log);
-        latch.await(); // ждем результата по запросу
-    }
-
-    private void publishLogInChannel(LogWithUrl log) {
-        String formattedMessage = formatPageMessage(log.description(), log.date(), log.url());
-        telegramController.sendMessage(formattedMessage);
+        }
     }
 
     private LogWithUrl pageToLog(Page page) {
@@ -114,7 +99,7 @@ public class Manager {
             sessionType = SessionType.STRUCTURE_SCH2;
         }
 
-        return new LogWithUrl(page.getCreated(), description, price, category, sessionType, page.getUrl());
+        return new LogWithUrl(new Log(page.getCreated(), description, price, category, sessionType), page.getUrl());
     }
 
 }

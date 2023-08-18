@@ -32,6 +32,7 @@ public final class TelegramUtils {
         text = text.replace("(", "\\(");
         text = text.replace(")", "\\)");
         text = text.replace("!", "\\!");
+        text = text.replace("#", "\\#");
         return text;
     }
 
@@ -40,14 +41,16 @@ public final class TelegramUtils {
 //      2 600 ₽
 //      https://telegra.ph/Aktualnoe-dr-07-10
     public static String getVerifyingMsg(LogWithUrl log) {
-        String msg = log.category().getName() + ": *" + log.description() + "*\n" +
-                "_" + formatDateForChannel(log.date());
-        if (log.sessionType() != null) {
-            msg += ", " + log.sessionType().getName();
+        String msg = log.log().category().getName() + ": *" + log.log().description() + "*\n" +
+                "_" + formatDateForChannel(log.log().date());
+        if (log.log().sessionType() != null) {
+            msg += ", " + log.log().sessionType().getName();
         }
         msg += "_\n" +
-                formatPriceForChannel(log.price()) + "\n" +
-                log.url();
+                formatPriceForChannel(log.log().price());
+        if (log.url() != null && !log.url().isEmpty()) {
+            msg += "\n" + log.url();
+        }
         msg = cleanText(msg);
         return msg;
     }

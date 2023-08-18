@@ -90,7 +90,7 @@ public class TelegramController {
                 return;
             }
             Category newCategory = Category.findByName((String) answer);
-            SessionType sessionType = log.sessionType();
+            SessionType sessionType = log.log().sessionType();
             if (newCategory != Category.SESSION) {
                 sessionType = null;
             } else {

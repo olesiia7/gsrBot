@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import telegram.commands.AddLogCommand;
 import telegram.commands.QueryCommand;
 import telegram.model.LogWithUrl;
 
@@ -41,14 +41,16 @@ public class TelegramService {
 
     private Bot bot;
     private final QueryCommand queryCommand;
+    private final AddLogCommand addLogCommand;
 
     public TelegramService(QueryCommand queryCommand, AddLogCommand addLogCommand) {
         this.queryCommand = queryCommand;
+        this.addLogCommand = addLogCommand;
     }
 
     @PostConstruct
     private void init() {
-        this.bot = new Bot(botToken, botName, queryCommand);
+        this.bot = new Bot(botToken, botName, queryCommand, addLogCommand);
     }
 
     public boolean connectToBot() {

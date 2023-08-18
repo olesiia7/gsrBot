@@ -1,11 +1,14 @@
 package telegram;
 
+import java.sql.SQLException;
+
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import telegram.commands.AddLogCommand;
 import telegram.commands.QueryCommand;
 
 import static telegram.TelegramUtils.addDecisionToMsg;
@@ -15,11 +18,13 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private final String botName;
     private AnswerListener listener;
 
-    public Bot(String botToken, String botName, QueryCommand queryCommand) {
+    public Bot(String botToken, String botName, QueryCommand queryCommand, AddLogCommand addLogCommand) {
         super(botToken);
         this.botName = botName;
 
+        addLogCommand.setListener(this);
         register(queryCommand);
+        register(addLogCommand);
     }
 
     public void setListener(AnswerListener listener) {
@@ -33,7 +38,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             try {
                 listener.processAnswer(json);
                 handleButtonClick(update.getCallbackQuery());
-            } catch (TelegramApiException e) {
+            } catch (TelegramApiException | SQLException e) {
                 e.printStackTrace();
             }
             return;
@@ -42,7 +47,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             String text = update.getMessage().getText();
             try {
                 listener.processAnswer(text);
-            } catch (TelegramApiException ex) {
+            } catch (TelegramApiException | SQLException ex) {
                 System.out.println(ex.getMessage());
             }
         }
