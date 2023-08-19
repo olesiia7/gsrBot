@@ -1,10 +1,8 @@
-package googleCloud;
+package utils;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Date;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,15 +17,19 @@ import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
 
+/**
+ * Использовался для выкачки первоначальной базы Google Sheets
+ * Преобразовал данные из .csv в коллекцию Log.
+ */
+@Deprecated
 public final class CSVLogParser {
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public static List<Log> parseLogs() throws IOException {
         FileReader reader = new FileReader("src/main/resources/GSR log2.csv");
         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader());
         List<Log> logs = new ArrayList<>();
         for (CSVRecord csvRecord : csvParser) {
-            Date date = toDate(csvRecord.get("Дата"));
+            Date date = Utils.toDate(csvRecord.get("Дата"));
             String description = csvRecord.get("Описание");
             int price = Integer.parseInt(csvRecord.get("Стоимость").replace(" ", ""));
             String categoryText = csvRecord.get("Категория");
@@ -69,10 +71,5 @@ public final class CSVLogParser {
             }
         }
         return logs;
-    }
-
-    private static Date toDate(String inputDate) {
-        LocalDate localDate = LocalDate.parse(inputDate, DATE_FORMATTER);
-        return Date.valueOf(localDate);
     }
 }

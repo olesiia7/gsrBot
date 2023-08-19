@@ -2,15 +2,13 @@ package telegram;
 
 import java.sql.Date;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 import telegram.model.Decision;
 import telegram.model.LogWithUrl;
+import utils.Utils;
 
 public final class TelegramUtils {
     private static final DecimalFormat D_F = new DecimalFormat("###,###");
-    private static final DateTimeFormatter CHANNEL_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public static String addDecisionToMsg(String msg, String callQueryJson) {
         Decision decision = Decision.valueOf(callQueryJson);
@@ -42,7 +40,7 @@ public final class TelegramUtils {
 //      https://telegra.ph/Aktualnoe-dr-07-10
     public static String getVerifyingMsg(LogWithUrl log) {
         String msg = log.log().category().getName() + ": *" + log.log().description() + "*\n" +
-                "_" + formatDateForChannel(log.log().date());
+                "_" + Utils.getDate(log.log().date());
         if (log.log().sessionType() != null) {
             msg += ", " + log.log().sessionType().getName();
         }
@@ -57,7 +55,7 @@ public final class TelegramUtils {
 
     public static String formatPageMessage(String title, Date created, String url) {
         String message = "*" + title + "*\n" +
-                "_" + formatDateForChannel(created) + "_\n" +
+                "_" + Utils.getDate(created) + "_\n" +
                 url;
         message = cleanText(message);
         return message;
@@ -65,10 +63,5 @@ public final class TelegramUtils {
 
     public static String formatPriceForChannel(int price) {
         return D_F.format(price) + " ₽";
-    }
-
-    public static String formatDateForChannel(Date date) {
-        LocalDate localDate = date.toLocalDate();
-        return localDate.format(CHANNEL_DATE_FORMATTER);
     }
 }

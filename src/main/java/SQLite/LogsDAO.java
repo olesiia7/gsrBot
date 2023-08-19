@@ -27,7 +27,6 @@ import static SQLite.model.LogsTable.getLogField;
 @Component
 public class LogsDAO extends DAO {
     private static final String COLUMNS_WITHOUT_ID = C_DATE + "," + C_DESCRIPTION + "," + C_PRICE + "," + C_CATEGORY_ID + "," + C_SESSION_TYPE_ID;
-    private static final String ALL_COLUMNS = C_ID + "," + COLUMNS_WITHOUT_ID;
     private static final String GET_LAST_ID_SQL = "SELECT last_insert_rowid();";
     private final String SELECT_ALL = "SELECT * FROM " + getTableName();
 
@@ -38,7 +37,8 @@ public class LogsDAO extends DAO {
     public List<Log> getLogs(LogsFilter filter) throws SQLException {
         Statement stmt = connection.createStatement();
         final String sql = SELECT_ALL +
-                buildWhere(filter);
+                buildWhere(filter) +
+                "\nORDER BY " + C_DATE + " ASC;";
 
         ResultSet rs = stmt.executeQuery(sql);
         List<Log> logs = new ArrayList<>();

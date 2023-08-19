@@ -17,13 +17,14 @@ import SQLite.LogsFilter;
 import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
+import events.ConvertDbToCSVEvent;
 import events.VerifyAndPublishLogEvent;
-import googleCloud.CSVLogParser;
 import handlers.EventManager;
 import telegram.TelegramController;
 import telegram.model.LogWithUrl;
 import telegraph.TelegraphController;
 import telegraph.model.Page;
+import utils.CSVLogParser;
 
 @Component
 @PropertySource("classpath:application.properties")
@@ -32,6 +33,10 @@ public class Manager {
     private boolean createFromScratch;
     @Value("${add.new.logs}")
     private boolean addNewLogs;
+    @Value("${convert.db.to.csv}")
+    private boolean convertDbToCsv;
+    @Value("${connect.to.bot}")
+    private boolean connectToBot;
 
     @Autowired
     private TelegraphController telegraphController;
@@ -53,7 +58,9 @@ public class Manager {
             List<Log> dbLogs = dbController.getLogs(LogsFilter.EMPTY);
             System.out.printf("логи: %d, логи из бд: %d\n", logs.size(), dbLogs.size());
         }
-        telegramController.connectToBot();
+        if (connectToBot) {
+            telegramController.connectToBot();
+        }
 
         if (addNewLogs) {
             List<String> lastSessionOrDiagnostic = dbController.getLastSessionOrDiagnostic();
@@ -70,6 +77,9 @@ public class Manager {
                 eventManager.handleEvent(new VerifyAndPublishLogEvent(logWithUrl, promise));
                 promise.get(); // чтобы не посылать новые запросы, пока не принято решение по текущему
             }
+        }
+        if (convertDbToCsv) {
+            eventManager.handleEvent(new ConvertDbToCSVEvent("src/main/resources/db.csv"));
         }
     }
 

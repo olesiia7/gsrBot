@@ -17,8 +17,8 @@ import SQLite.LogsFilter;
 import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
+import utils.Utils;
 
-import static telegram.TelegramUtils.formatDateForChannel;
 import static telegram.TelegramUtils.formatPriceForChannel;
 
 @Component
@@ -85,12 +85,8 @@ public class QueryCommand extends BotCommand {
     }
 
     private String toString(Log log) {
-        String formattedDate = formatDateForChannel(log.date());
+        String formattedDate = Utils.getDate(log.date());
         String formattedPrice = formatPriceForChannel(log.price());
-        String category = log.category().getName();
-        if (log.sessionType() != null) {
-            category += " (" + log.sessionType().getName() + ")";
-        }
-        return String.format("%-12s%-40s\n%-11s%-20s", formattedDate, log.description(), formattedPrice, category);
+        return String.format("%-12s%-40s%-11s", formattedDate, log.description(), formattedPrice);
     }
 }
