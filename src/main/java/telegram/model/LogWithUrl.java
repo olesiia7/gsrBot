@@ -1,6 +1,6 @@
 package telegram.model;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.springframework.lang.Nullable;
 
 import SQLite.model.Category;
 import SQLite.model.Log;

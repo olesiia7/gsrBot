@@ -4,7 +4,7 @@ import java.sql.Date;
 
 import javax.validation.constraints.NotNull;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.springframework.lang.Nullable;
 
 /**
  * Полная информация о логе

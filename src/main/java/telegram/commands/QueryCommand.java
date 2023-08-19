@@ -85,8 +85,12 @@ public class QueryCommand extends BotCommand {
     }
 
     private String toString(Log log) {
-        String formattedDate = Utils.getDate(log.date());
-        String formattedPrice = formatPriceForChannel(log.price());
-        return String.format("%-12s%-40s%-11s", formattedDate, log.description(), formattedPrice);
+        StringBuilder sb = new StringBuilder();
+        sb.append(Utils.getDate(log.date())).append(" ");
+        sb.append(log.description());
+        if (log.price() != 0) {
+            sb.append(", ").append(formatPriceForChannel(log.price()));
+        }
+        return sb.toString();
     }
 }
