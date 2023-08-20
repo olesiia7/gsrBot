@@ -26,7 +26,7 @@ public class QueryCommand extends BotCommand {
     private final DbController db;
 
     public QueryCommand(DbController db) {
-        super("query", "Посмотреть записи БД");
+        super("query", "Посмотреть записи");
         this.db = db;
     }
 

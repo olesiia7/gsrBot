@@ -47,7 +47,6 @@ public class TelegraphController {
                 newPages.add(page);
             }
         }
-        System.out.printf("Новых статей: %d\n", newPagesAmount);
         return newPages;
     }
 

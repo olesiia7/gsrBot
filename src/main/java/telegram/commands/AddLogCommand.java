@@ -14,7 +14,6 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import SQLite.model.Category;
 import SQLite.model.Log;
-import SQLite.model.SessionType;
 import events.VerifyAndPublishLogEvent;
 import handlers.EventManager;
 import telegram.Bot;
@@ -87,7 +86,7 @@ public class AddLogCommand extends BotCommand {
         bot.setListener(answer -> {
             try {
                 Date date = Utils.toDate((String) answer);
-                Log log = buildLog(category, date, description);
+                Log log = Utils.predictLog(description, category, date);
                 CompletableFuture<Void> promise = new CompletableFuture<>();
                 eventManager.handleEvent(new VerifyAndPublishLogEvent(new LogWithUrl(log, null), promise));
             } catch (DateTimeParseException ex) {
@@ -95,35 +94,5 @@ public class AddLogCommand extends BotCommand {
             }
         });
         abs.execute(message);
-    }
-
-    private Log buildLog(Category category, Date date, String description) {
-        int price = 0;
-        SessionType sessionType = null;
-        switch (category) {
-            case SESSION -> {
-                price = 2600;
-                sessionType = SessionType.SR;
-                if (description.contains("СЧ1")) {
-                    price = 5000;
-                    sessionType = SessionType.SCH1;
-                } else if (description.contains("СЧ2")) {
-                    price = 5000;
-                    sessionType = SessionType.SCH2;
-                } else if (description.contains("С#") || description.contains("C#")) {
-                    price = 5000;
-                    sessionType = SessionType.STRUCTURE;
-                } else if (description.contains("СЧ#1")) {
-                    price = 8000;
-                    sessionType = SessionType.STRUCTURE_SCH1;
-                } else if (description.contains("СЧ#2")) {
-                    price = 8000;
-                    sessionType = SessionType.STRUCTURE_SCH2;
-                }
-            }
-            case EXPERT_SUPPORT -> price = 10000;
-            case ONE_PLUS -> price = 4000;
-        }
-        return new Log(null, date, description, price, category, sessionType);
     }
 }

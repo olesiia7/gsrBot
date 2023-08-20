@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import telegram.commands.AddLogCommand;
+import telegram.commands.CheckNewLogsCommand;
 import telegram.commands.QueryCommand;
 import telegram.model.LogWithUrl;
 
@@ -42,15 +43,19 @@ public class TelegramService {
     private Bot bot;
     private final QueryCommand queryCommand;
     private final AddLogCommand addLogCommand;
+    private final CheckNewLogsCommand checkNewLogsCommand;
 
-    public TelegramService(QueryCommand queryCommand, AddLogCommand addLogCommand) {
+    public TelegramService(QueryCommand queryCommand,
+                           AddLogCommand addLogCommand,
+                           CheckNewLogsCommand checkNewLogsCommand) {
         this.queryCommand = queryCommand;
         this.addLogCommand = addLogCommand;
+        this.checkNewLogsCommand = checkNewLogsCommand;
     }
 
     @PostConstruct
     private void init() {
-        this.bot = new Bot(botToken, botName, queryCommand, addLogCommand);
+        this.bot = new Bot(botToken, botName, queryCommand, addLogCommand, checkNewLogsCommand);
     }
 
     public boolean connectToBot() {

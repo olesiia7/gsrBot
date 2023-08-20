@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import telegram.commands.AddLogCommand;
+import telegram.commands.CheckNewLogsCommand;
 import telegram.commands.QueryCommand;
 
 import static telegram.TelegramUtils.addDecisionToMsg;
@@ -18,13 +19,17 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private final String botName;
     private AnswerListener listener;
 
-    public Bot(String botToken, String botName, QueryCommand queryCommand, AddLogCommand addLogCommand) {
+    public Bot(String botToken, String botName,
+               QueryCommand queryCommand,
+               AddLogCommand addLogCommand,
+               CheckNewLogsCommand checkNewLogsCommand) {
         super(botToken);
         this.botName = botName;
 
         addLogCommand.setListener(this);
         register(queryCommand);
         register(addLogCommand);
+        register(checkNewLogsCommand);
     }
 
     public void setListener(AnswerListener listener) {
