@@ -14,6 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import SQLite.model.Category;
 import SQLite.model.SessionType;
 import telegram.model.Decision;
+import telegram.model.ReportType;
 
 import static utils.Utils.MONTH_NAMES;
 
@@ -35,6 +36,7 @@ public final class MarkupFactory {
     public static final ReplyKeyboardMarkup EDIT_CATEGORY_MARKUP = getEditCategoryMarkup();
     public static final ReplyKeyboardMarkup EDIT_SESSION_TYPE_MARKUP = getEditSessionTypeMarkup();
     public static final ReplyKeyboardMarkup MONTHS_MARKUP = getMonthsMarkup();
+    public static final ReplyKeyboardMarkup REPORT_TYPE_MARKUP = getReportType();
 
     public static final ReplyKeyboardRemove REMOVE_MARKUP = removeMarkup();
 
@@ -64,7 +66,13 @@ public final class MarkupFactory {
         return getReplyMarkup(MONTH_NAMES.toArray(new String[0]));
     }
 
-    private static ReplyKeyboardMarkup getReplyMarkup(String... buttons) {
+    private static ReplyKeyboardMarkup getReportType() {
+        return getReplyMarkup(Arrays.stream(ReportType.values())
+                .map(ReportType::getName)
+                .toArray(String[]::new));
+    }
+
+    public static ReplyKeyboardMarkup getReplyMarkup(String... buttons) {
         ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
         markup.setResizeKeyboard(true);
         markup.setOneTimeKeyboard(true);

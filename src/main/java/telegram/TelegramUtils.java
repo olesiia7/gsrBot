@@ -1,14 +1,12 @@
 package telegram;
 
 import java.sql.Date;
-import java.text.DecimalFormat;
 
 import telegram.model.Decision;
 import telegram.model.LogWithUrl;
 import utils.Utils;
 
 public final class TelegramUtils {
-    private static final DecimalFormat D_F = new DecimalFormat("###,###");
 
     public static String addDecisionToMsg(String msg, String callQueryJson) {
         Decision decision = Decision.valueOf(callQueryJson);
@@ -46,7 +44,7 @@ public final class TelegramUtils {
             msg += ", " + log.log().sessionType().getName();
         }
         msg += "_\n" +
-                formatPriceForChannel(log.log().price());
+                Utils.formatPrice(log.log().price());
         if (log.url() != null && !log.url().isEmpty()) {
             msg += "\n" + log.url();
         }
@@ -60,9 +58,5 @@ public final class TelegramUtils {
                 url;
         message = cleanText(message);
         return message;
-    }
-
-    public static String formatPriceForChannel(int price) {
-        return D_F.format(price) + " ₽";
     }
 }

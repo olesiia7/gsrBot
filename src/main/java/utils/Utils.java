@@ -1,6 +1,7 @@
 package utils;
 
 import java.sql.Date;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -23,6 +24,7 @@ public class Utils {
     public static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DecimalFormat PRICE_FORMAT = new DecimalFormat("###,###");
 
     /**
      * @param inputDate dd.MM.yyyy
@@ -43,6 +45,13 @@ public class Utils {
     }
 
     /**
+     * Возвращает цену в формате 42 000 ₽
+     */
+    public static String formatPrice(int price) {
+        return PRICE_FORMAT.format(price) + " ₽";
+    }
+
+    /**
      * Возвращает строку с логом в виде:
      * дата (dd.MM.yyyy),"описание",цена,категория,(?тип сессии)
      */
@@ -51,16 +60,23 @@ public class Utils {
                 "\"" + log.description() + "\"," +
                 log.price() + "," +
                 log.category().getName() + "," +
-                (log.sessionType() == null ? "" : log.sessionType().getName()) +
-                "\n";
+                (log.sessionType() == null ? "" : log.sessionType().getName());
     }
 
     /**
      * @param month месяц
-     * @return номер месяца, Январь = 0
+     * @return номер месяца - 1, Январь = 0
      */
     public static int getMonthNumber(String month) {
         return MONTH_NAMES.indexOf(month);
+    }
+
+    /**
+     * @param monthNumber номер месяца - 1 (январь = 0)
+     * @return название
+     */
+    public static String getMonth(int monthNumber) {
+        return MONTH_NAMES.get(monthNumber);
     }
 
     /**

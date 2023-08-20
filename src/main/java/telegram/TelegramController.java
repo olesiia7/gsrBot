@@ -1,8 +1,11 @@
 package telegram;
 
+import javax.validation.constraints.NotNull;
+
 import org.springframework.context.annotation.Scope;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 
 import SQLite.model.Category;
 import SQLite.model.SessionType;
@@ -10,9 +13,9 @@ import telegram.model.Decision;
 import telegram.model.LogDecision;
 import telegram.model.LogWithUrl;
 
+import static telegram.MarkupFactory.EDIT_CATEGORY;
 import static telegram.MarkupFactory.EDIT_FINISHED;
 import static telegram.MarkupFactory.EDIT_SESSION_PRICE;
-import static telegram.MarkupFactory.EDIT_CATEGORY;
 import static telegram.MarkupFactory.EDIT_SESSION_TYPE;
 
 @Component
@@ -37,7 +40,14 @@ public class TelegramController {
         service.sendMessage(message);
     }
 
-    public void verifyLog(LogWithUrl log) throws TelegramApiException {
+    public void sendMeMessage(@NotNull String message,
+                              @Nullable ReplyKeyboard keyboard,
+                              @Nullable AnswerListener listener,
+                              boolean formatted) {
+        service.sendMeMessage(message, keyboard, listener, formatted);
+    }
+
+    public void verifyLog(LogWithUrl log) {
         service.verifyLog(log, answer -> {
             Decision decision = Decision.valueOf((String) answer);
             switch (decision) {
@@ -48,12 +58,12 @@ public class TelegramController {
         });
     }
 
-    private void deleteMarkupAndVerifyLog(LogWithUrl log) throws TelegramApiException {
+    private void deleteMarkupAndVerifyLog(LogWithUrl log) {
         deleteMarkup();
         verifyLog(log);
     }
 
-    public void editLog(LogWithUrl log) throws TelegramApiException {
+    private void editLog(LogWithUrl log) {
         service.editLog(answer -> {
             switch ((String) answer) {
                 case EDIT_SESSION_PRICE -> waitNewPrice(log);
@@ -64,11 +74,11 @@ public class TelegramController {
         });
     }
 
-    private void deleteMarkup() throws TelegramApiException {
+    private void deleteMarkup() {
         service.deleteMarkup("Ваш ответ принят.");
     }
 
-    public void waitNewPrice(LogWithUrl log) throws TelegramApiException {
+    private void waitNewPrice(LogWithUrl log) {
         service.waitNewPrice(answer -> {
             if (answer.equals(EDIT_FINISHED)) {
                 deleteMarkupAndVerifyLog(log);
@@ -83,7 +93,7 @@ public class TelegramController {
         });
     }
 
-    public void waitNewCategory(LogWithUrl log) throws TelegramApiException {
+    private void waitNewCategory(LogWithUrl log) {
         service.waitNewCategory(answer -> {
             if (answer.equals(EDIT_FINISHED)) {
                 deleteMarkupAndVerifyLog(log);
@@ -102,7 +112,7 @@ public class TelegramController {
         });
     }
 
-    public void waitNewSessionType(LogWithUrl log) throws TelegramApiException {
+    private void waitNewSessionType(LogWithUrl log) {
         service.waitNewSessionType(answer -> {
             if (answer.equals(EDIT_FINISHED)) {
                 deleteMarkupAndVerifyLog(log);

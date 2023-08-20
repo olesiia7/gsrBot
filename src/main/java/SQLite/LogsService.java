@@ -3,9 +3,12 @@ package SQLite;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import SQLite.model.Log;
+import telegram.model.YearMonth;
+import telegram.model.CategorySummary;
 
 @Component
 public class LogsService extends Service<LogsDAO> {
@@ -38,5 +41,20 @@ public class LogsService extends Service<LogsDAO> {
      */
     public List<Log> getLastRecords(int amount) throws SQLException {
         return dao.getLastRecords(amount);
+    }
+
+    /**
+     * Получаем все месяцы, которые есть в отчеты (2023, 8; 2023, 7; ...)
+     */
+    public List<YearMonth> getAllPeriods() throws SQLException {
+        return dao.getAllPeriods();
+    }
+
+    /**
+     * @param period период в виде yyyy-mm (если null, то за всё время)
+     * @return Получаем категорию + кол-во в ней + сумма расходов
+     */
+    public List<CategorySummary> getCategorySummary(@Nullable String period) throws SQLException {
+        return dao.getCategorySummary(period);
     }
 }

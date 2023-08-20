@@ -3,9 +3,12 @@ package SQLite;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import SQLite.model.Log;
+import telegram.model.YearMonth;
+import telegram.model.CategorySummary;
 
 @Component
 public class DbController {
@@ -37,6 +40,14 @@ public class DbController {
 
     public List<Log> getLastRecords(int amount, LogsFilter filter) throws SQLException {
         return logService.getLastLogs(filter, amount);
+    }
+
+    public List<YearMonth> getAllPeriods() throws SQLException {
+        return logService.getAllPeriods();
+    }
+
+    public List<CategorySummary> getCategorySummary(@Nullable String period) throws SQLException {
+        return logService.getCategorySummary(period);
     }
 
     public void clearAllData() {

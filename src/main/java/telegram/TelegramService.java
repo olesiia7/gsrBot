@@ -77,7 +77,7 @@ public class TelegramService {
     /**
      * Для удаления клавиатуры сейчас нет решения лучше, чем выпустить сообщение
      */
-    public void deleteMarkup(String message) throws TelegramApiException {
+    public void deleteMarkup(String message) {
         sendMeMessage(message, REMOVE_MARKUP, null, false);
     }
 
@@ -91,32 +91,32 @@ public class TelegramService {
         }
     }
 
-    public void verifyLog(LogWithUrl log, AnswerListener listener) throws TelegramApiException {
+    public void verifyLog(LogWithUrl log, AnswerListener listener) {
         String message = getVerifyingMsg(log);
         sendMeMessage(message, VERIFYING_MARKUP, listener, true);
     }
 
-    public void editLog(AnswerListener listener) throws TelegramApiException {
+    public void editLog(AnswerListener listener) {
         String message = "Выберите, что вы хотите изменить:";
         sendMeMessage(message, EDITING_MARKUP, listener, false);
     }
 
-    public void waitNewPrice(AnswerListener listener) throws TelegramApiException {
+    public void waitNewPrice(AnswerListener listener) {
         String message = "Введите новую цену (цифры без знаков и пробелов)";
         sendMeMessage(message, BACK_MARKUP, listener, false);
     }
 
-    public void waitNewCategory(AnswerListener listener) throws TelegramApiException {
+    public void waitNewCategory(AnswerListener listener) {
         String message = "Выберите новую категорию:";
         sendMeMessage(message, EDIT_CATEGORY_MARKUP, listener, false);
     }
 
-    public void waitNewSessionType(AnswerListener listener) throws TelegramApiException {
+    public void waitNewSessionType(AnswerListener listener) {
         String message = "Выберите новый тип:";
         sendMeMessage(message, EDIT_SESSION_TYPE_MARKUP, listener, false);
     }
 
-    private void sendMeMessage(@NotNull String message,
+    public void sendMeMessage(@NotNull String message,
                                @Nullable ReplyKeyboard keyboard,
                                @Nullable AnswerListener listener,
                                boolean formatted) {

@@ -24,6 +24,5 @@ public class AddToDbHandler {
     public void handleEvent(AddToDbEvent event) throws SQLException {
         Log log = event.log();
         dbController.addLog(log);
-        System.out.println("Добавлено в базу: " + log);
     }
 }

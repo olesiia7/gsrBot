@@ -9,11 +9,14 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
+import telegram.model.YearMonth;
+import telegram.model.CategorySummary;
 
 import static SQLite.model.LogsTable.C_CATEGORY_ID;
 import static SQLite.model.LogsTable.C_DATE;
@@ -29,6 +32,7 @@ public class LogsDAO extends DAO {
     private static final String COLUMNS_WITHOUT_ID = C_DATE + "," + C_DESCRIPTION + "," + C_PRICE + "," + C_CATEGORY_ID + "," + C_SESSION_TYPE_ID;
     private static final String GET_LAST_ID_SQL = "SELECT last_insert_rowid();";
     private final String SELECT_ALL = "SELECT * FROM " + getTableName();
+    private final String CONVERT_TIME_SQL = "datetime(" + C_DATE + " / 1000, 'unixepoch', 'localtime')";
 
     public LogsDAO(ConnectionManager connectionManager) {
         super(connectionManager.getConnection(), TABLE_NAME);
@@ -176,6 +180,40 @@ public class LogsDAO extends DAO {
             return resultSet.getInt(1);
         }
         throw new SQLException("Error while getting last log id");
+    }
+
+    public List<YearMonth> getAllPeriods() throws SQLException {
+        String sql = "SELECT strftime('%Y', " + CONVERT_TIME_SQL + ") AS year,\n" +
+                "strftime('%m', " + CONVERT_TIME_SQL + ") AS month\n" +
+                "FROM " + getTableName() + "\n" +
+                "GROUP BY year, month\n" +
+                "ORDER BY year DESC, month DESC;";
+        ResultSet resultSet = connection.prepareStatement(sql).executeQuery();
+        List<YearMonth> result = new ArrayList<>();
+        while (resultSet.next()) {
+            int year = resultSet.getInt(1);
+            int month = resultSet.getInt(2);
+            result.add(new YearMonth(year, month));
+        }
+        return result;
+    }
+
+    public List<CategorySummary> getCategorySummary(@Nullable String period) throws SQLException {
+        String sql = "SELECT " + C_CATEGORY_ID + ", COUNT(*) AS count, SUM(" + C_PRICE + ") AS total_price " +
+                "FROM logs";
+        if (period != null) {
+            sql += " WHERE strftime('%Y-%m', " + CONVERT_TIME_SQL + ") = '" + period + "'";
+        }
+        sql += " GROUP BY " + C_CATEGORY_ID;
+        List<CategorySummary> result = new ArrayList<>();
+        ResultSet resultSet = connection.prepareStatement(sql).executeQuery();
+        while (resultSet.next()) {
+            Category category = Category.findById(resultSet.getInt(1));
+            int count = resultSet.getInt(2);
+            int priceSum = resultSet.getInt(3);
+            result.add(new CategorySummary(category, count, priceSum));
+        }
+        return result;
     }
 
     @Override
