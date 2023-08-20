@@ -119,7 +119,7 @@ public class TelegramService {
     private void sendMeMessage(@NotNull String message,
                                @Nullable ReplyKeyboard keyboard,
                                @Nullable AnswerListener listener,
-                               boolean formatted) throws TelegramApiException {
+                               boolean formatted) {
         SendMessage sendMessage = new SendMessage(myId, message);
         if (formatted) {
             sendMessage.setParseMode("MarkdownV2");
@@ -130,6 +130,11 @@ public class TelegramService {
         if (listener != null) {
             bot.setListener(listener);
         }
-        bot.execute(sendMessage);
+        try {
+            bot.execute(sendMessage);
+        } catch (TelegramApiException e) {
+            System.out.println("Ошибка при попытке отправить сообщение: " + message);
+            e.printStackTrace();
+        }
     }
 }

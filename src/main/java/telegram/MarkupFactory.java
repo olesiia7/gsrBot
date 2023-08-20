@@ -15,6 +15,8 @@ import SQLite.model.Category;
 import SQLite.model.SessionType;
 import telegram.model.Decision;
 
+import static utils.Utils.MONTH_NAMES;
+
 public final class MarkupFactory {
     private static final String APPROVE_BUTTON_TEXT = "✅ Одобрить";
     private static final String DECLINE_BUTTON_TEXT = "❌ Пропустить";
@@ -32,6 +34,7 @@ public final class MarkupFactory {
 
     public static final ReplyKeyboardMarkup EDIT_CATEGORY_MARKUP = getEditCategoryMarkup();
     public static final ReplyKeyboardMarkup EDIT_SESSION_TYPE_MARKUP = getEditSessionTypeMarkup();
+    public static final ReplyKeyboardMarkup MONTHS_MARKUP = getMonthsMarkup();
 
     public static final ReplyKeyboardRemove REMOVE_MARKUP = removeMarkup();
 
@@ -40,6 +43,7 @@ public final class MarkupFactory {
         remove.setRemoveKeyboard(true);
         return remove;
     }
+
     private static ReplyKeyboardMarkup getEditCategoryMarkup() {
         List<String> buttons = Arrays.stream(Category.values())
                 .map(Category::getName)
@@ -54,6 +58,10 @@ public final class MarkupFactory {
                 .collect(Collectors.toList());
         buttons.add(EDIT_FINISHED);
         return getReplyMarkup(buttons.toArray(new String[0]));
+    }
+
+    private static ReplyKeyboardMarkup getMonthsMarkup() {
+        return getReplyMarkup(MONTH_NAMES.toArray(new String[0]));
     }
 
     private static ReplyKeyboardMarkup getReplyMarkup(String... buttons) {

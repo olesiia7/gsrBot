@@ -31,6 +31,7 @@ public final class TelegramUtils {
         text = text.replace(")", "\\)");
         text = text.replace("!", "\\!");
         text = text.replace("#", "\\#");
+        text = text.replace("+", "\\+");
         return text;
     }
 

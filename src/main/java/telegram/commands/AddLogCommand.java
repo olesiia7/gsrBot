@@ -1,6 +1,7 @@
 package telegram.commands;
 
 import java.sql.Date;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,6 +22,7 @@ import telegram.model.LogWithUrl;
 import utils.Utils;
 
 import static telegram.MarkupFactory.EDIT_CATEGORY_MARKUP;
+import static telegram.MarkupFactory.MONTHS_MARKUP;
 import static telegram.MarkupFactory.REMOVE_MARKUP;
 
 @Component
@@ -52,13 +54,41 @@ public class AddLogCommand extends BotCommand {
             message.setText(text);
             message.setReplyMarkup(EDIT_CATEGORY_MARKUP);
             bot.setListener(answer -> {
-                enterDescription(Category.findByName((String) answer));
+                Category category = Category.findByName((String) answer);
+                if (category == Category.EXPERT_SUPPORT
+                        || category == Category.ONE_PLUS) {
+                    enterPeriod(category);
+                } else {
+                    enterDescription(category);
+                }
             });
             absSender.execute(message);
 
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    private void enterPeriod(Category category) throws TelegramApiException {
+        String text = "Выберите период оплаты";
+
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText(text);
+        message.setReplyMarkup(MONTHS_MARKUP);
+        bot.setListener(answer -> {
+            String monthName = (String) answer;
+            int month = Utils.getMonthNumber(monthName);
+            int year = LocalDate.now().getYear();
+
+            Date date = Utils.getDate(1, month, year);
+            String description = monthName + " " + year;
+
+            Log log = Utils.predictLog(description, category, date);
+            CompletableFuture<Void> promise = new CompletableFuture<>();
+            eventManager.handleEvent(new VerifyAndPublishLogEvent(new LogWithUrl(log, null), promise));
+        });
+        abs.execute(message);
     }
 
     private void enterDescription(Category category) throws TelegramApiException {

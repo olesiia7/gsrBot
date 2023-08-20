@@ -4,6 +4,9 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
 
 import javax.validation.constraints.NotNull;
 
@@ -17,6 +20,8 @@ import static SQLite.model.Category.EXPERT_SUPPORT;
 import static SQLite.model.Category.ONE_PLUS;
 
 public class Utils {
+    public static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
+
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     /**
@@ -51,7 +56,29 @@ public class Utils {
     }
 
     /**
-     *  По описанию и категории (может быть null) пытается определить категорию и тип сессии
+     * @param month месяц
+     * @return номер месяца, Январь = 0
+     */
+    public static int getMonthNumber(String month) {
+        return MONTH_NAMES.indexOf(month);
+    }
+
+    /**
+     * @param day   день
+     * @param month месяц - 1 (январь = 0)
+     * @param year  год
+     * @return дату
+     */
+    public static Date getDate(int day, int month, int year) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month);
+        calendar.set(Calendar.DAY_OF_MONTH, day);
+        return new Date(calendar.getTime().getTime());
+    }
+
+    /**
+     * По описанию и категории (может быть null) пытается определить категорию и тип сессии
      */
     public static Log predictLog(@NotNull String description,
                                  @Nullable Category category,
