@@ -3,6 +3,8 @@ package telegram.commands;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
@@ -61,11 +63,22 @@ public class CheckNewLogsCommand extends BotCommand {
                 return;
             }
 
-            for (LogWithUrl logWithUrl : newPages) {
-                CompletableFuture<Void> promise = new CompletableFuture<>();
-                eventManager.handleEvent(new VerifyAndPublishLogEvent(logWithUrl, promise));
-                promise.get(); // чтобы не посылать новые запросы, пока не принято решение по текущему
-            }
+            // Пул потоков для цикла
+            ExecutorService loopExecutor = Executors.newSingleThreadExecutor();
+
+            // Запускаем цикл в отдельном потоке
+            CompletableFuture.runAsync(() -> {
+                for (LogWithUrl logWithUrl : newPages) {
+                    CompletableFuture<Void> promise = new CompletableFuture<>();
+                    eventManager.handleEvent(new VerifyAndPublishLogEvent(logWithUrl, promise));
+
+                    try {
+                        promise.get(); // чтобы не посылать новые запросы, пока не принято решение по текущему
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, loopExecutor);
         } catch (TelegramApiException | ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }

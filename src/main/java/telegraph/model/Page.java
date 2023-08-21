@@ -1,7 +1,6 @@
 package telegraph.model;
 
 import java.sql.Date;
-import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.regex.Matcher;
@@ -44,25 +43,18 @@ public class Page implements TelegraphObject {
     }
 
     private void calculateDate() {
-        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        int month = Integer.parseInt(url.substring(url.length() - 5, url.length() - 3));
-        int day = Integer.parseInt(url.substring(url.length() - 2));
-        try {
+        // sometimes if url is already exists, url can be formatted url-dd-mm-copy
+        // for this case we will use regexp
+        Pattern pattern = Pattern.compile("(\\d{2})-(\\d{2})");
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find()) {
+            int month = Integer.parseInt(matcher.group(1));
+            int day = Integer.parseInt(matcher.group(2));
+            int currentYear = Calendar.getInstance().get(Calendar.YEAR);
             LocalDate localDate = LocalDate.of(currentYear, month, day);
             created = Date.valueOf(localDate);
-        } catch (DateTimeException ex) {
-            // sometimes if url is already exists, url can be formatted url-dd-mm-copy
-            // for this case we will use regexp
-            Pattern pattern = Pattern.compile("(\\d{2})-(\\d{2})");
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()) {
-                month = Integer.parseInt(matcher.group(1));
-                day = Integer.parseInt(matcher.group(2));
-            } else {
-                System.out.printf("Error while getting date from url %s\n", url);
-            }
-            LocalDate localDate = LocalDate.of(currentYear, month, day);
-            created = Date.valueOf(localDate);
+        } else {
+            System.out.printf("Error while getting date from url %s\n", url);
         }
     }
 

@@ -124,6 +124,7 @@ public class Utils {
                 sessionType = SessionType.RANG_SCH1;
             } else {
                 price = 2600;
+                category = Category.SESSION;
                 sessionType = SessionType.SR;
             }
         } else if (category == EXPERT_SUPPORT) {
