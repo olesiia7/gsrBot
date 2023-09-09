@@ -26,6 +26,5 @@ public class PublishInChannelHandler {
         }
         String formattedMessage = formatPageMessage(logWithUrl.log().description(), logWithUrl.log().date(), url);
         telegramController.sendMessage(formattedMessage);
-        System.out.println("Опубликовано в канале " + logWithUrl.log().description());
     }
 }

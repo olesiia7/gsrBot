@@ -8,7 +8,10 @@ public enum Category {
     SELF_SESSION("Самосессия", 4),
     SOURCE("Подключение к истоку", 5),
     ONE_PLUS("Подписка 1+", 6),
-    OTHER_EXPENSES("Сопутствующие расходы", 7);
+    OTHER_EXPENSES("Сопутствующие расходы", 7),
+    PG1("ПГ1", 8),
+    PG2("ПГ2", 9);
+
 
     private final String name;
     private final int id;
