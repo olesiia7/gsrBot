@@ -1,11 +1,9 @@
 package telegram.commands;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import events.GetLastSessionOrDiagnosticEvent;
+import events.GetNewTelegraphPagesEvent;
+import events.VerifyAndPublishLogEvent;
+import handlers.EventManager;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -13,12 +11,13 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import events.GetLastSessionOrDiagnosticEvent;
-import events.GetNewTelegraphPagesEvent;
-import events.VerifyAndPublishLogEvent;
-import handlers.EventManager;
 import telegram.model.LogWithUrl;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static telegram.MarkupFactory.REMOVE_MARKUP;
 
@@ -59,7 +58,7 @@ public class CheckNewLogsCommand extends BotCommand {
             message.setText("Новых статей: " + newPages.size());
             absSender.execute(message);
 
-            if (newPages.size() == 0) {
+            if (newPages.isEmpty()) {
                 return;
             }
 

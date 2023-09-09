@@ -1,5 +1,11 @@
 package utils;
 
+import SQLite.model.Category;
+import SQLite.model.Log;
+import SQLite.model.SessionType;
+import org.springframework.lang.Nullable;
+
+import javax.validation.constraints.NotNull;
 import java.sql.Date;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -8,14 +14,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
-
-import javax.validation.constraints.NotNull;
-
-import org.springframework.lang.Nullable;
-
-import SQLite.model.Category;
-import SQLite.model.Log;
-import SQLite.model.SessionType;
 
 import static SQLite.model.Category.EXPERT_SUPPORT;
 import static SQLite.model.Category.ONE_PLUS;
@@ -55,6 +53,7 @@ public class Utils {
      * Возвращает строку с логом в виде:
      * дата (dd.MM.yyyy),"описание",цена,категория,(?тип сессии)
      */
+    @SuppressWarnings("GrazieInspection")
     public static String getCSV(Log log) {
         return Utils.getDate(log.date()) + "," +
                 "\"" + log.description() + "\"," +

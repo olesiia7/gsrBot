@@ -1,10 +1,5 @@
 package telegram;
 
-import java.util.Date;
-
-import javax.annotation.PostConstruct;
-import javax.validation.constraints.NotNull;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.lang.Nullable;
@@ -14,18 +9,16 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
-
 import telegram.commands.AddLogCommand;
 import telegram.commands.CheckNewLogsCommand;
 import telegram.commands.QueryCommand;
 import telegram.model.LogWithUrl;
 
-import static telegram.MarkupFactory.BACK_MARKUP;
-import static telegram.MarkupFactory.EDITING_MARKUP;
-import static telegram.MarkupFactory.EDIT_CATEGORY_MARKUP;
-import static telegram.MarkupFactory.EDIT_SESSION_TYPE_MARKUP;
-import static telegram.MarkupFactory.REMOVE_MARKUP;
-import static telegram.MarkupFactory.VERIFYING_MARKUP;
+import javax.annotation.PostConstruct;
+import javax.validation.constraints.NotNull;
+import java.util.Date;
+
+import static telegram.MarkupFactory.*;
 import static telegram.TelegramUtils.getVerifyingMsg;
 
 @Component
@@ -70,7 +63,7 @@ public class TelegramService {
         }
     }
 
-    public void sendMeMessage(String message, boolean formatted) throws TelegramApiException {
+    public void sendMeMessage(String message, boolean formatted) {
         sendMeMessage(message, null, null, formatted);
     }
 

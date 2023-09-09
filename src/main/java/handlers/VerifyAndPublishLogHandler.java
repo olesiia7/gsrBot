@@ -1,22 +1,20 @@
 package handlers;
 
-import java.util.concurrent.CompletableFuture;
-
+import events.AddToDbEvent;
+import events.PublishInChannelEvent;
+import events.VerifyAndPublishLogEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import events.AddToDbEvent;
-import events.PublishInChannelEvent;
-import events.VerifyAndPublishLogEvent;
 import telegram.TelegramController;
 import telegram.model.Decision;
 import telegram.model.LogDecision;
 import telegram.model.LogWithUrl;
 import utils.Utils;
+
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @PropertySource("classpath:application.properties")
@@ -38,7 +36,7 @@ public class VerifyAndPublishLogHandler {
     }
 
     @EventListener
-    public CompletableFuture<Void> handleEvent(VerifyAndPublishLogEvent event) throws TelegramApiException, InterruptedException {
+    public CompletableFuture<Void> handleEvent(VerifyAndPublishLogEvent event) {
         CompletableFuture<Void> promise = event.resultPromise();
         telegramController.setListener(answer -> {
             LogDecision logDecision = (LogDecision) answer;

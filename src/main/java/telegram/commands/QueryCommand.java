@@ -1,17 +1,6 @@
 package telegram.commands;
 
 
-import java.sql.SQLException;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
-import org.telegram.telegrambots.meta.api.objects.Chat;
-import org.telegram.telegrambots.meta.api.objects.User;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.bots.AbsSender;
-
 import SQLite.DbController;
 import SQLite.LogsFilter;
 import SQLite.model.Category;
@@ -19,12 +8,21 @@ import SQLite.model.Log;
 import SQLite.model.SessionType;
 import events.SendMeTelegramMessageEvent;
 import handlers.EventManager;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
+import org.telegram.telegrambots.meta.api.objects.Chat;
+import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.bots.AbsSender;
 import telegram.AnswerListener;
 import telegram.MarkupFactory;
+import telegram.model.CategorySummary;
 import telegram.model.ReportType;
 import telegram.model.YearMonth;
-import telegram.model.CategorySummary;
 import utils.Utils;
+
+import java.sql.SQLException;
+import java.util.List;
 
 import static telegram.MarkupFactory.REMOVE_MARKUP;
 import static telegram.MarkupFactory.REPORT_TYPE_MARKUP;
@@ -87,7 +85,7 @@ public class QueryCommand extends BotCommand {
             builder = new LogsFilter.Builder();
             builder.setSessionType(SessionType.RANG_SCH2);
             lastRecords = db.getLastRecords(1, builder.build());
-            if (lastRecords.size() > 0) {
+            if (!lastRecords.isEmpty()) {
                 sb.append("*Последняя ранговая в СЧ2:*\n");
                 sb.append(toString(lastRecords.get(0))).append("\n\n");
             }
@@ -124,7 +122,7 @@ public class QueryCommand extends BotCommand {
             List<YearMonth> allPeriods = db.getAllPeriods();
             List<String> periods = allPeriods.stream()
                     .map(yearMonth -> Utils.getMonth(yearMonth.month() - 1) + " " + yearMonth.year())
-                    .collect(Collectors.toList());
+                    .toList();
             ReplyKeyboardMarkup markup = MarkupFactory.getReplyMarkup(periods.toArray(String[]::new));
 
             AnswerListener listener = answer -> {
@@ -166,7 +164,7 @@ public class QueryCommand extends BotCommand {
     }
 
     private void sendMoneyByMonthReport() {
-
+        //ToDo
     }
 
     private void sendMoneyByCategoryReport() throws SQLException {
