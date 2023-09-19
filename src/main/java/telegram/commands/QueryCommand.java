@@ -6,6 +6,7 @@ import SQLite.LogsFilter;
 import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
+import events.GetMonthlyReportEvent;
 import events.SendMeTelegramMessageEvent;
 import handlers.EventManager;
 import org.springframework.stereotype.Component;
@@ -134,7 +135,7 @@ public class QueryCommand extends BotCommand {
                 List<CategorySummary> categorySummary = db.getCategorySummary(period);
 
                 String sb = "*Отчёт за " + answerDate + ":*\n\n" +
-                        getReportByCategories(categorySummary);
+                        getReportByCategories(categorySummary, true);
 
                 SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(sb, REMOVE_MARKUP, null, true);
                 manager.handleEvent(event);
@@ -146,7 +147,7 @@ public class QueryCommand extends BotCommand {
         }
     }
 
-    private String getReportByCategories(List<CategorySummary> categorySummary) {
+    public static String getReportByCategories(List<CategorySummary> categorySummary, boolean addTotalCount) {
         //ToDo: добавить разделение сессий по подтипам
         //Сессии(13): 57 200 ₽
         //Диагностика(1): 0 ₽
@@ -155,23 +156,26 @@ public class QueryCommand extends BotCommand {
         int totalPrice = 0;
         for (CategorySummary summary : categorySummary) {
             sb.append("*").append(summary.category().getName()).append("*")
-                    .append("(").append(summary.count()).append("): ")
+                    .append(" (").append(summary.count()).append("): ")
                     .append(Utils.formatPrice(summary.priceSum())).append("\n");
             totalPrice += summary.priceSum();
         }
-        sb.append("\n").append("*Всего потрачено:* ").append(Utils.formatPrice(totalPrice));
+        if (addTotalCount) {
+            sb.append("\n").append("*Всего потрачено:* ").append(Utils.formatPrice(totalPrice));
+        }
         return sb.toString();
     }
 
+    // посмотреть отчеты за текущий месяц, 3, 6 месяцев или произвольно
     private void sendMoneyByMonthReport() {
-        //ToDo
+        manager.handleEvent(new GetMonthlyReportEvent());
     }
 
     private void sendMoneyByCategoryReport() throws SQLException {
         List<CategorySummary> categorySummary = db.getCategorySummary(null);
 
         String sb = "*Отчёт по категориям:*\n\n" +
-                getReportByCategories(categorySummary);
+                getReportByCategories(categorySummary, true);
 
         SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(sb, REMOVE_MARKUP, null, true);
         manager.handleEvent(event);

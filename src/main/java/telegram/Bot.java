@@ -1,21 +1,23 @@
 package telegram;
 
-import java.sql.SQLException;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
 import telegram.commands.AddLogCommand;
 import telegram.commands.CheckNewLogsCommand;
 import telegram.commands.QueryCommand;
+
+import java.sql.SQLException;
 
 import static telegram.TelegramUtils.addDecisionToMsg;
 import static telegram.TelegramUtils.cleanText;
 
 public final class Bot extends TelegramLongPollingCommandBot {
+    private final Logger logger = LoggerFactory.getLogger(Bot.class);
     private final String botName;
     private AnswerListener listener;
 
@@ -44,7 +46,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
                 listener.processAnswer(json);
                 handleButtonClick(update.getCallbackQuery());
             } catch (TelegramApiException | SQLException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage());
             }
             return;
         }
@@ -52,8 +54,8 @@ public final class Bot extends TelegramLongPollingCommandBot {
             String text = update.getMessage().getText();
             try {
                 listener.processAnswer(text);
-            } catch (TelegramApiException | SQLException ex) {
-                System.out.println(ex.getMessage());
+            } catch (NullPointerException | TelegramApiException | SQLException e) {
+                logger.error(e.getMessage());
             }
         }
     }
@@ -73,7 +75,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
         try {
             execute(editMessageText);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
     }
 

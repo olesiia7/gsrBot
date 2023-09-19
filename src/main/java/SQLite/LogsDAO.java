@@ -1,31 +1,20 @@
 package SQLite;
 
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
-
 import SQLite.model.Category;
 import SQLite.model.Log;
 import SQLite.model.SessionType;
-import telegram.model.YearMonth;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 import telegram.model.CategorySummary;
+import telegram.model.MonthlyCategorySummary;
+import telegram.model.MonthlySummary;
+import telegram.model.YearMonth;
 
-import static SQLite.model.LogsTable.C_CATEGORY_ID;
-import static SQLite.model.LogsTable.C_DATE;
-import static SQLite.model.LogsTable.C_DESCRIPTION;
-import static SQLite.model.LogsTable.C_ID;
-import static SQLite.model.LogsTable.C_PRICE;
-import static SQLite.model.LogsTable.C_SESSION_TYPE_ID;
-import static SQLite.model.LogsTable.TABLE_NAME;
-import static SQLite.model.LogsTable.getLogField;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static SQLite.model.LogsTable.*;
 
 @Component
 public class LogsDAO extends DAO {
@@ -212,6 +201,66 @@ public class LogsDAO extends DAO {
             int count = resultSet.getInt(2);
             int priceSum = resultSet.getInt(3);
             result.add(new CategorySummary(category, count, priceSum));
+        }
+        return result;
+    }
+
+    public List<MonthlyCategorySummary> getExtendedMonthlySummary(int months) throws SQLException {
+        String monthColumn = "month";
+        String countColumn = "count";
+        String totalPriceColumn = "total_price";
+        String sql = "SELECT strftime('%Y-%m', " + CONVERT_TIME_SQL + ") AS " + monthColumn + ",\n" +
+                C_CATEGORY_ID + ",\n" +
+                "COUNT(*) AS " + countColumn + ",\n" +
+                "SUM(" + C_PRICE + ") AS " + totalPriceColumn + "\n" +
+                "FROM " + getTableName() + "\n" +
+                "WHERE strftime('%Y-%m', " + CONVERT_TIME_SQL + ") >= strftime('%Y-%m', 'now', '-" + months + " months')\n" +
+                "GROUP BY " + monthColumn + ", " + C_CATEGORY_ID + "\n" +
+                "ORDER BY " + monthColumn + " DESC, " + C_CATEGORY_ID;
+
+        List<MonthlyCategorySummary> result = new ArrayList<>();
+        ResultSet resultSet = connection.prepareStatement(sql).executeQuery();
+        List<CategorySummary> categorySummaries = new ArrayList<>();
+        String prevPeriod = null;
+        while (resultSet.next()) {
+            // month, cat_id, count, total_price
+            String currentPeriod = resultSet.getString(monthColumn);
+            Category category = Category.findById(resultSet.getInt(C_CATEGORY_ID));
+            int count = resultSet.getInt(countColumn);
+            int priceSum = resultSet.getInt(totalPriceColumn);
+            if (!currentPeriod.equals(prevPeriod)) {
+                if (prevPeriod != null) {
+                    result.add(new MonthlyCategorySummary(categorySummaries, prevPeriod));
+                    categorySummaries = new ArrayList<>();
+                }
+                categorySummaries.add(new CategorySummary(category, count, priceSum));
+                prevPeriod = currentPeriod;
+            } else {
+                categorySummaries.add(new CategorySummary(category, count, priceSum));
+            }
+        }
+        if (prevPeriod != null) {
+            result.add(new MonthlyCategorySummary(categorySummaries, prevPeriod));
+        }
+        return result;
+    }
+
+    public List<MonthlySummary> getMonthlySummary(int months) throws SQLException {
+        String monthColumn = "month";
+        String totalPriceColumn = "total_price";
+        String sql = "SELECT strftime('%Y-%m', " + CONVERT_TIME_SQL + ") AS " + monthColumn + ",\n" +
+                "SUM(" + C_PRICE + ") AS " + totalPriceColumn + "\n" +
+                "FROM " + getTableName() + "\n" +
+                "WHERE strftime('%Y-%m', " + CONVERT_TIME_SQL + ") >= strftime('%Y-%m', 'now', '-" + months + " months')\n" +
+                "GROUP BY " + monthColumn + "\n" +
+                "ORDER BY " + monthColumn + " DESC";
+
+        List<MonthlySummary> result = new ArrayList<>();
+        ResultSet resultSet = connection.prepareStatement(sql).executeQuery();
+        while (resultSet.next()) {
+            String period = resultSet.getString(monthColumn);
+            int priceSum = resultSet.getInt(totalPriceColumn);
+            result.add(new MonthlySummary(period, priceSum));
         }
         return result;
     }

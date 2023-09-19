@@ -129,8 +129,8 @@ public class TelegramService {
         try {
             bot.execute(sendMessage);
         } catch (TelegramApiException e) {
-            System.out.println("Ошибка при попытке отправить сообщение: " + message);
-            e.printStackTrace();
+            logger.error("Ошибка при попытке отправить сообщение: " + message);
+            logger.error(e.getMessage());
         }
     }
 }

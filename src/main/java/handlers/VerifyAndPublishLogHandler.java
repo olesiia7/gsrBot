@@ -12,7 +12,6 @@ import telegram.TelegramController;
 import telegram.model.Decision;
 import telegram.model.LogDecision;
 import telegram.model.LogWithUrl;
-import utils.Utils;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -23,8 +22,6 @@ public class VerifyAndPublishLogHandler {
     private boolean addToChannel;
     @Value("${log.add.to.db}")
     private boolean addToDb;
-    @Value("${print.added.csv}")
-    private boolean printAddedCSV;
 
     private final TelegramController telegramController;
     private final EventManager eventManager;
@@ -47,9 +44,6 @@ public class VerifyAndPublishLogHandler {
                 }
                 if (addToDb) {
                     eventManager.handleEvent(new AddToDbEvent(logWithUrl.log()));
-                    if (printAddedCSV) {
-                        System.out.println(Utils.getCSV(logWithUrl.log()));
-                    }
                 }
             }
             promise.complete(null);

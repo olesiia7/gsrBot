@@ -1,14 +1,15 @@
 package SQLite;
 
-import java.sql.SQLException;
-import java.util.List;
-
+import SQLite.model.Log;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-
-import SQLite.model.Log;
-import telegram.model.YearMonth;
 import telegram.model.CategorySummary;
+import telegram.model.MonthlyCategorySummary;
+import telegram.model.MonthlySummary;
+import telegram.model.YearMonth;
+
+import java.sql.SQLException;
+import java.util.List;
 
 @Component
 public class LogsService extends Service<LogsDAO> {
@@ -44,10 +45,28 @@ public class LogsService extends Service<LogsDAO> {
     }
 
     /**
-     * Получаем все месяцы, которые есть в отчеты (2023, 8; 2023, 7; ...)
+     * Получаем все месяцы, которые есть в отчете (2023, 8; 2023, 7; ...)
      */
     public List<YearMonth> getAllPeriods() throws SQLException {
         return dao.getAllPeriods();
+    }
+
+    /**
+     * Получаем расширенный отчет (с тратами по категориям) за {@code months}
+     *
+     * @param months кол-во месяцев, начиная с 0
+     */
+    public List<MonthlyCategorySummary> getExtendedMonthlySummary(int months) throws SQLException {
+        return dao.getExtendedMonthlySummary(months);
+    }
+
+    /**
+     * Получаем отчет (сумма потраченного) за {@code months}
+     *
+     * @param months кол-во месяцев, начиная с 0
+     */
+    public List<MonthlySummary> getMonthlySummary(int months) throws SQLException {
+        return dao.getMonthlySummary(months);
     }
 
     /**

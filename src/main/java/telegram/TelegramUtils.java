@@ -1,10 +1,10 @@
 package telegram;
 
-import java.sql.Date;
-
 import telegram.model.Decision;
 import telegram.model.LogWithUrl;
 import utils.Utils;
+
+import java.sql.Date;
 
 public final class TelegramUtils {
 
@@ -30,6 +30,7 @@ public final class TelegramUtils {
         text = text.replace("!", "\\!");
         text = text.replace("#", "\\#");
         text = text.replace("+", "\\+");
+        text = text.replace("|", "\\|");
         return text;
     }
 

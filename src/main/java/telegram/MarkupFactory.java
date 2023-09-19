@@ -1,23 +1,23 @@
 package telegram;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import SQLite.model.Category;
+import SQLite.model.SessionType;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
-
-import SQLite.model.Category;
-import SQLite.model.SessionType;
 import telegram.model.Decision;
 import telegram.model.ReportType;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static utils.Utils.MONTH_NAMES;
 
+//ToDo: провести рефакторинг: вынести из класса готовые MARKUP
 public final class MarkupFactory {
     private static final String APPROVE_BUTTON_TEXT = "✅ Одобрить";
     private static final String DECLINE_BUTTON_TEXT = "❌ Пропустить";
