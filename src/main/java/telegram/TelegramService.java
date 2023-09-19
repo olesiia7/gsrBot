@@ -1,5 +1,7 @@
 package telegram;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.lang.Nullable;
@@ -37,6 +39,7 @@ public class TelegramService {
     private final QueryCommand queryCommand;
     private final AddLogCommand addLogCommand;
     private final CheckNewLogsCommand checkNewLogsCommand;
+    private final Logger logger = LoggerFactory.getLogger(TelegramService.class);
 
     public TelegramService(QueryCommand queryCommand,
                            AddLogCommand addLogCommand,
@@ -55,7 +58,7 @@ public class TelegramService {
         try {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(bot);
-            System.out.println("Подключились к боту " + bot.getBotUsername());
+            logger.info("Подключились к боту " + bot.getBotUsername());
             return true;
         } catch (TelegramApiException e) {
             System.out.printf("Error while connecting to telegram: %s\n", e.getMessage());
