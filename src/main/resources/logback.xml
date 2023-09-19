@@ -1,0 +1,59 @@
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ALL_IN_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/myapp.log</file>
+        <encoder>
+            <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <append>false</append>
+    </appender>
+
+    <appender name="SQL" class="ch.qos.logback.core.FileAppender">
+        <file>logs/sql.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%m%n%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="p6spy" level="INFO" additivity="false">
+        <appender-ref ref="SQL"/>
+    </logger>
+
+    <appender name="PUBLISH_IN_CHANNEL" class="ch.qos.logback.core.FileAppender">
+        <file>logs/published_in_channel.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss} %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="handlers.PublishInChannelHandler" level="INFO">
+        <appender-ref ref="PUBLISH_IN_CHANNEL"/>
+    </logger>
+
+    <appender name="ERRORS" class="ch.qos.logback.core.FileAppender">
+        <file>logs/errors.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss} %logger{36} %m%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ALL_IN_FILE"/>
+        <appender-ref ref="ERRORS" level="ERROR"/>
+    </root>
+
+</configuration>
