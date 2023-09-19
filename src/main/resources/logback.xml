@@ -37,6 +37,18 @@
         <appender-ref ref="PUBLISH_IN_CHANNEL"/>
     </logger>
 
+    <appender name="PUBLISH_IN_DB" class="ch.qos.logback.core.FileAppender">
+        <file>logs/scv_to_db.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%m%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="handlers.AddToDbHandler" level="INFO">
+        <appender-ref ref="PUBLISH_IN_DB"/>
+    </logger>
+
     <appender name="ERRORS" class="ch.qos.logback.core.FileAppender">
         <file>logs/errors.log</file>
         <append>false</append>
