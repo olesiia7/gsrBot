@@ -24,4 +24,4 @@ hs_err_pid*
 replay_pid*
 /.idea/
 /src/main/resources
-/src/main/test/SQLite/GSR_Test.db
+/src/main/test/bot.gsr.SQLite/GSR_Test.db
