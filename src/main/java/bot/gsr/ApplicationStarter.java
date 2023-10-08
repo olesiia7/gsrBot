@@ -1,10 +1,11 @@
-package bot.gsr.conf;
+package bot.gsr;
 
 import bot.gsr.SQLite.DbController;
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.SQLite.model.Log;
 import bot.gsr.events.ConvertDbToCSVEvent;
 import bot.gsr.handlers.EventManager;
+import bot.gsr.service.LogService;
 import bot.gsr.telegram.TelegramController;
 import bot.gsr.utils.CSVLogParser;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,11 +31,13 @@ public class ApplicationStarter implements ApplicationRunner {
     private final DbController dbController;
     private final TelegramController telegramController;
     private final EventManager eventManager;
+    private final LogService logService;
 
-    public ApplicationStarter(DbController dbController, TelegramController telegramController, EventManager eventManager) {
+    public ApplicationStarter(DbController dbController, TelegramController telegramController, EventManager eventManager, LogService logService) {
         this.dbController = dbController;
         this.telegramController = telegramController;
         this.eventManager = eventManager;
+        this.logService = logService;
     }
 
     @Override

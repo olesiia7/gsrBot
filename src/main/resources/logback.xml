@@ -1,14 +1,25 @@
 <configuration>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss} %-5level %logger{0} - %msg%n</pattern>
         </encoder>
+    </appender>
+
+    <appender name="CONSOLE_ERROR" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>место ошибки: %logger{0}.%method .(%logger{0}.java:%line\)%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
     </appender>
 
     <appender name="ALL_IN_FILE" class="ch.qos.logback.core.FileAppender">
         <file>logs/myapp.log</file>
         <encoder>
-            <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss} %-5level %logger{0} - %msg%n</pattern>
         </encoder>
         <append>false</append>
     </appender>
@@ -55,7 +66,7 @@
         <file>logs/errors.log</file>
         <append>false</append>
         <encoder>
-            <pattern>%d{HH:mm:ss} %logger{36} %m%n</pattern>
+            <pattern>%d{HH:mm:ss} %logger{0} %m%n</pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
@@ -66,6 +77,7 @@
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="CONSOLE_ERROR"/>
         <appender-ref ref="ALL_IN_FILE"/>
         <appender-ref ref="ERRORS" level="ERROR"/>
     </root>
