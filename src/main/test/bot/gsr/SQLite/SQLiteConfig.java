@@ -6,8 +6,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
+@SuppressWarnings("unused")
 @Configuration
-@PropertySource("classpath:sqliteTest.properties")
+@PropertySource("classpath:resources/sqliteTest.properties")
 public class SQLiteConfig {
     @Value("${db.path}")
     private String dbPath;

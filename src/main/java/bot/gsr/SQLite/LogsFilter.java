@@ -47,6 +47,26 @@ public class LogsFilter {
         return id == null && date == null && description == null && category == null && sessionType == null;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("LogsFilter{");
+        if (date != null) {
+            sb.append("date=").append(date).append(", ");
+        }
+        if (description != null) {
+            sb.append("description='").append(description).append("', ");
+        }
+        if (category != null) {
+            sb.append("category=").append(category).append(", ");
+        }
+        if (sessionType != null) {
+            sb.append("sessionType=").append(sessionType);
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
     public static class Builder {
         static final Builder EMPTY = new Builder();
 

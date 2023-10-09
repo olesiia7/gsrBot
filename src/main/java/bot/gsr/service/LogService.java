@@ -11,7 +11,7 @@ public class LogService {
         this.repository = repository;
     }
 
-    public void checkTable() {
-        repository.checkTable();
+    public void createTableIfNotExists() {
+        repository.createTableIfNotExists();
     }
 }
