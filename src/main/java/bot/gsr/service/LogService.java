@@ -27,14 +27,14 @@ public class LogService {
         repository.addLog(log);
     }
 
+    /**
+     * Получаем названия последних (по дате) публикаций (их может быть несколько в одну дату)
+     */
+    public List<String> getLastSessionOrDiagnostic() {
+        return repository.getLastSessionOrDiagnostic();
+    }
+
     //ToDo GSRBOT-7 миграция
-//    /**
-//     * Получаем названия последних (по дате) публикаций (их может быть несколько в одну дату)
-//     */
-//    public List<String> getLastSessionOrDiagnostic() {
-//        return repository.getLastSessionOrDiagnostic();
-//    }
-//
 //    /**
 //     * Получаем {@code amount} последних записей
 //     */
