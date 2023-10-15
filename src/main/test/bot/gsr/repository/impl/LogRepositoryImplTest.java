@@ -1,4 +1,4 @@
-package bot.gsr.repository;
+package bot.gsr.repository.impl;
 
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.TestConfig;
@@ -18,6 +18,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
+import static bot.gsr.SQLite.model.Category.DIAGNOSTIC;
 import static bot.gsr.SQLite.model.Category.SESSION;
 import static bot.gsr.SQLite.model.SessionType.SR;
 import static org.junit.jupiter.api.Assertions.*;
@@ -170,7 +171,6 @@ class LogRepositoryImplTest {
 
             String fileContent = scvOutput.toString();
             assertEquals(expectedCsvOutput, fileContent);
-            System.out.println(fileContent);
         } catch (IOException e) {
             e.printStackTrace();
             fail();
@@ -210,5 +210,43 @@ class LogRepositoryImplTest {
                 .filter(log -> log.equals(log1))
                 .count();
         assertEquals(2, log1amount);
+    }
+
+    @Test
+    @DisplayName("Последние записи по фильтру")
+    void getLastLogs() {
+        Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, Category.PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-10-13"), "desc4", 10_000, Category.SESSION, null);
+
+        logRepository.addLog(log1);
+        logRepository.addLog(log2);
+        logRepository.addLog(log3);
+        logRepository.addLog(log4);
+
+        // amount > записей
+        List<Log> lastLogs = logRepository.getLastLogs(LogsFilter.EMPTY, 5);
+        assertEquals(4, lastLogs.size());
+
+        // последняя запись по всем категориям
+        lastLogs = logRepository.getLastLogs(LogsFilter.EMPTY, 1);
+        assertEquals(1, lastLogs.size());
+        assertEquals(lastLogs.get(0), log3);
+
+        // последняя запись категории (из 2)
+        LogsFilter.Builder builder = new LogsFilter.Builder().setCategory(SESSION);
+        lastLogs = logRepository.getLastLogs(builder.build(), 1);
+        assertEquals(1, lastLogs.size());
+        assertEquals(lastLogs.get(0), log4);
+
+        // 2 записи категории
+        lastLogs = logRepository.getLastLogs(builder.build(), 2);
+        assertEquals(2, lastLogs.size());
+
+        // не существует
+        builder = new LogsFilter.Builder().setCategory(DIAGNOSTIC).setDescription("desc1");
+        lastLogs = logRepository.getLastLogs(builder.build(), 1);
+        assertEquals(0, lastLogs.size());
     }
 }

@@ -1,9 +1,10 @@
-package bot.gsr.repository;
+package bot.gsr.repository.impl;
 
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.Category;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
+import bot.gsr.repository.LogRepository;
 import bot.gsr.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,12 @@ public class LogRepositoryImpl implements LogRepository {
                 buildWhere(filter) +
                 "\nORDER BY " + C_DATE + " ASC;";
 
-        Function<ResultSet, List<Log>> resultSetProcessor = resultSet -> {
+        Function<ResultSet, List<Log>> resultSetProcessor = getResultSetProcessor(sql);
+        return executeQuery(dataSource, sql, resultSetProcessor);
+    }
+
+    private Function<ResultSet, List<Log>> getResultSetProcessor(String sql) {
+        return resultSet -> {
             List<Log> logs = new ArrayList<>();
             try {
                 while (resultSet.next()) {
@@ -90,7 +96,6 @@ public class LogRepositoryImpl implements LogRepository {
 
             return logs;
         };
-        return executeQuery(dataSource, sql, resultSetProcessor);
     }
 
     private String buildWhere(LogsFilter filter) {
@@ -99,7 +104,7 @@ public class LogRepositoryImpl implements LogRepository {
         }
         StringBuilder where = new StringBuilder();
         boolean needAnd = false;
-        where.append(" WHERE ");
+        where.append("\nWHERE ");
         if (filter.getId() != null) {
             where.append(getLogField(C_ID)).append("=").append(filter.getId());
             needAnd = true;
@@ -143,6 +148,16 @@ public class LogRepositoryImpl implements LogRepository {
         String sessionTypeName = rs.getString(C_SESSION_TYPE);
         SessionType sessionType = sessionTypeName == null ? null : SessionType.getSessionType(sessionTypeName);
         return new Log(date, description, price, category, sessionType);
+    }
+
+    @Override
+    public List<Log> getLastLogs(LogsFilter filter, int amount) {
+        String sql = String.format("""
+                        SELECT %s FROM %s %s
+                        ORDER BY %s DESC
+                        LIMIT %d;""",
+                ALL_COLUMNS, TABLE_NAME, buildWhere(filter), C_DATE, amount);
+        return executeQuery(dataSource, sql, getResultSetProcessor(sql));
     }
 
     @Override

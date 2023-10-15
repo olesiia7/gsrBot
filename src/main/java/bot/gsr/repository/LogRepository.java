@@ -2,6 +2,7 @@ package bot.gsr.repository;
 
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.Log;
+import bot.gsr.repository.impl.LogRepositoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +28,24 @@ public interface LogRepository {
 
     void dropTableIfExists();
 
-    void addLog(Log log);
+    void addLog(@NotNull Log log);
 
-    List<Log> getLogs(LogsFilter filter);
+    List<Log> getLogs(@NotNull LogsFilter filter);
+
+    List<Log> getLastLogs(@NotNull LogsFilter filter, int amount);
+
+    //ToDo GSRBOT-7 миграция
+//    List<String> getLastSessionOrDiagnostic();
+//
+//    List<Log> getLastRecords(int amount);
+//
+//    List<YearMonth> getAllPeriods();
+//
+//    List<CategorySummary> getCategorySummary(@Nullable String period);
+//
+//    List<MonthlyCategorySummary> getExtendedMonthlySummary(int months);
+//
+//    List<MonthlySummary> getMonthlySummary(int months);
 
     void makeDump(@NotNull String backupFilePath);
 
@@ -48,7 +64,7 @@ public interface LogRepository {
         return null;
     }
 
-    default void execute(DataSource dataSource, String SQL) {
+    default void execute(@NotNull DataSource dataSource, @NotNull String SQL) {
         try (Connection con = dataSource.getConnection()) {
             Statement statement = con.createStatement();
             statement.execute(SQL);
@@ -57,7 +73,7 @@ public interface LogRepository {
         }
     }
 
-    private static void logError(String SQL, SQLException e) {
+    private static void logError(@NotNull String SQL, @NotNull SQLException e) {
         Optional<String> calledMethod = Arrays.stream(e.getStackTrace())
                 .filter(stack -> stack.getClassName().equals(LogRepositoryImpl.class.getName()))
                 .map(stack -> {

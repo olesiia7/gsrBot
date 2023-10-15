@@ -1,6 +1,6 @@
 package bot.gsr;
 
-import bot.gsr.repository.LogRepositoryImpl;
+import bot.gsr.repository.impl.LogRepositoryImpl;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
