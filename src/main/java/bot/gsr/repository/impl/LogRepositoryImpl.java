@@ -161,6 +161,27 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
+    public List<String> getLastSessionOrDiagnostic() {
+        String sql = "SELECT " + C_DESCRIPTION + "\n" +
+                "FROM " + TABLE_NAME + "\n" +
+                "WHERE " + C_DATE + " = (SELECT MAX(" + C_DATE + ") FROM " + TABLE_NAME + "\n" +
+                "WHERE " + C_CATEGORY + " IN('" + Category.DIAGNOSTIC.getName() + "','" + Category.SESSION.getName() + "'))\n" +
+                "AND " + C_CATEGORY + " IN('" + Category.DIAGNOSTIC.getName() + "','" + Category.SESSION.getName() + "');";
+        Function<ResultSet, List<String>> rsProcessor = resultSet -> {
+            List<String> lastDescriptions = new ArrayList<>();
+            try {
+                while (resultSet.next()) {
+                    lastDescriptions.add(resultSet.getString(1));
+                }
+            } catch (SQLException e) {
+                logger.error(sql + "\n\t" + e.getMessage());
+            }
+            return lastDescriptions;
+        };
+        return executeQuery(dataSource, sql, rsProcessor);
+    }
+
+    @Override
     public void makeDump(String backupFilePath) {
         List<Log> logs = getLogs(LogsFilter.EMPTY);
 

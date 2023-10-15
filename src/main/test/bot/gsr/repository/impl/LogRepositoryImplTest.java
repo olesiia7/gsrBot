@@ -249,4 +249,30 @@ class LogRepositoryImplTest {
         lastLogs = logRepository.getLastLogs(builder.build(), 1);
         assertEquals(0, lastLogs.size());
     }
+
+    @Test
+    @DisplayName("Последние сессия / диагностика")
+    void getLastSessionOrDiagnostic() {
+        Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, Category.PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, Category.SESSION, null);
+
+        logRepository.addLog(log1);
+        logRepository.addLog(log2);
+        logRepository.addLog(log3);
+        logRepository.addLog(log4);
+
+        List<String> lastSessionOrDiagnostic = logRepository.getLastSessionOrDiagnostic();
+        assertEquals(2, lastSessionOrDiagnostic.size());
+        assertTrue(lastSessionOrDiagnostic.contains(log2.description()));
+        assertTrue(lastSessionOrDiagnostic.contains(log4.description()));
+
+        Log log5 = new Log(Date.valueOf("2023-10-15"), "desc4", 10_000, Category.SESSION, null);
+        logRepository.addLog(log5);
+
+        lastSessionOrDiagnostic = logRepository.getLastSessionOrDiagnostic();
+        assertEquals(1, lastSessionOrDiagnostic.size());
+        assertTrue(lastSessionOrDiagnostic.contains(log5.description()));
+    }
 }

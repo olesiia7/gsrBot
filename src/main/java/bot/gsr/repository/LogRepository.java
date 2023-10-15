@@ -34,9 +34,9 @@ public interface LogRepository {
 
     List<Log> getLastLogs(@NotNull LogsFilter filter, int amount);
 
+    List<String> getLastSessionOrDiagnostic();
+
     //ToDo GSRBOT-7 миграция
-//    List<String> getLastSessionOrDiagnostic();
-//
 //    List<Log> getLastRecords(int amount);
 //
 //    List<YearMonth> getAllPeriods();
