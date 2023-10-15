@@ -3,6 +3,7 @@ package bot.gsr.service;
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.Log;
 import bot.gsr.repository.LogRepository;
+import bot.gsr.telegram.model.YearMonth;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,21 +35,14 @@ public class LogService {
         return repository.getLastSessionOrDiagnostic();
     }
 
+    /**
+     * Получаем все месяцы, которые есть в отчете (2023, 8; 2023, 7; ...)
+     */
+    public List<YearMonth> getAllPeriods() {
+        return repository.getAllPeriods();
+    }
+
     //ToDo GSRBOT-7 миграция
-//    /**
-//     * Получаем {@code amount} последних записей
-//     */
-//    public List<Log> getLastRecords(int amount) {
-//        return repository.getLastRecords(amount);
-//    }
-//
-//    /**
-//     * Получаем все месяцы, которые есть в отчете (2023, 8; 2023, 7; ...)
-//     */
-//    public List<YearMonth> getAllPeriods() {
-//        return repository.getAllPeriods();
-//    }
-//
 //    /**
 //     * Получаем расширенный отчет (с тратами по категориям) за {@code months}
 //     *

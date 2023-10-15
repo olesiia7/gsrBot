@@ -3,6 +3,7 @@ package bot.gsr.repository;
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.Log;
 import bot.gsr.repository.impl.LogRepositoryImpl;
+import bot.gsr.telegram.model.YearMonth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +37,9 @@ public interface LogRepository {
 
     List<String> getLastSessionOrDiagnostic();
 
+    List<YearMonth> getAllPeriods();
+
     //ToDo GSRBOT-7 миграция
-//    List<Log> getLastRecords(int amount);
-//
-//    List<YearMonth> getAllPeriods();
-//
 //    List<CategorySummary> getCategorySummary(@Nullable String period);
 //
 //    List<MonthlyCategorySummary> getExtendedMonthlySummary(int months);

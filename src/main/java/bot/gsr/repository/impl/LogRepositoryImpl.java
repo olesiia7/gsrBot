@@ -5,6 +5,7 @@ import bot.gsr.model.Category;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
 import bot.gsr.repository.LogRepository;
+import bot.gsr.telegram.model.YearMonth;
 import bot.gsr.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +92,7 @@ public class LogRepositoryImpl implements LogRepository {
                     logs.add(getLogFromResultSet(resultSet));
                 }
             } catch (SQLException e) {
-                logger.error(sql + "\n\t" + e.getMessage());
+                logError(sql, e);
             }
 
             return logs;
@@ -174,9 +175,35 @@ public class LogRepositoryImpl implements LogRepository {
                     lastDescriptions.add(resultSet.getString(1));
                 }
             } catch (SQLException e) {
-                logger.error(sql + "\n\t" + e.getMessage());
+                logError(sql, e);
             }
             return lastDescriptions;
+        };
+        return executeQuery(dataSource, sql, rsProcessor);
+    }
+
+    private void logError(String sql, SQLException e) {
+        logger.error(sql + "\n\t" + e.getMessage());
+    }
+
+    @Override
+    public List<YearMonth> getAllPeriods() {
+        String sql = "SELECT DISTINCT EXTRACT(YEAR FROM " + C_DATE + ") AS year,\n" +
+                "EXTRACT(MONTH FROM " + C_DATE + ") AS month\n" +
+                "FROM " + TABLE_NAME + "\n" +
+                "ORDER BY year DESC, month DESC;";
+        Function<ResultSet, List<YearMonth>> rsProcessor = resultSet -> {
+            List<YearMonth> result = new ArrayList<>();
+            try {
+                while (resultSet.next()) {
+                    int year = resultSet.getInt(1);
+                    int month = resultSet.getInt(2);
+                    result.add(new YearMonth(year, month));
+                }
+            } catch (SQLException e) {
+                logger.error(sql, e);
+            }
+            return result;
         };
         return executeQuery(dataSource, sql, rsProcessor);
     }
@@ -281,7 +308,7 @@ public class LogRepositoryImpl implements LogRepository {
                     return resultSet.getBoolean(1);
                 }
             } catch (SQLException e) {
-                logger.error(sql + "\n\t" + e.getMessage());
+                logError(sql, e);
             }
             return false;
         };

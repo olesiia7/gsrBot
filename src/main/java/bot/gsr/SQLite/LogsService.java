@@ -38,13 +38,6 @@ public class LogsService extends Service<LogsDAO> {
     }
 
     /**
-     * Получаем {@code amount} последних записей
-     */
-    public List<Log> getLastRecords(int amount) throws SQLException {
-        return dao.getLastRecords(amount);
-    }
-
-    /**
      * Получаем все месяцы, которые есть в отчете (2023, 8; 2023, 7; ...)
      */
     public List<YearMonth> getAllPeriods() throws SQLException {

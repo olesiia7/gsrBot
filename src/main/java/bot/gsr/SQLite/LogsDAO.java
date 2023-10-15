@@ -91,20 +91,6 @@ public class LogsDAO extends DAO {
         throw new SQLException("Error while getting last session/diagnostic date");
     }
 
-    public List<Log> getLastRecords(int amount) throws SQLException {
-        Statement stmt = connection.createStatement();
-        String sql = SELECT_ALL +
-                "\nGROUP BY " + getLogField(C_ID) +
-                "\nORDER BY " + C_DATE + " DESC\n" +
-                "LIMIT " + amount + ";";
-        ResultSet rs = stmt.executeQuery(sql);
-        List<Log> result = new ArrayList<>();
-        while (rs.next()) {
-            result.add(getLogFromResultSet(rs));
-        }
-        return result;
-    }
-
     private String buildWhere(LogsFilter filter) {
         if (filter.isEmpty()) {
             return "";

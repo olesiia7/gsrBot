@@ -5,6 +5,7 @@ import bot.gsr.TestConfig;
 import bot.gsr.model.Category;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
+import bot.gsr.telegram.model.YearMonth;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -274,5 +275,29 @@ class LogRepositoryImplTest {
         lastSessionOrDiagnostic = logRepository.getLastSessionOrDiagnostic();
         assertEquals(1, lastSessionOrDiagnostic.size());
         assertTrue(lastSessionOrDiagnostic.contains(log5.description()));
+    }
+
+    @Test
+    @DisplayName("Все годы - месяцы в таблице")
+    void getAllPeriods() {
+        Log log1 = new Log(Date.valueOf("2023-09-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-11-15"), "desc3", 5000, Category.PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, Category.SESSION, null);
+        Log log5 = new Log(Date.valueOf("2021-12-14"), "desc4", 10_000, Category.SESSION, null);
+
+        logRepository.addLog(log1);
+        logRepository.addLog(log2);
+        logRepository.addLog(log3);
+        logRepository.addLog(log4);
+        logRepository.addLog(log5);
+
+        List<YearMonth> allPeriods = logRepository.getAllPeriods();
+        assertEquals(4, allPeriods.size());
+
+        assertEquals(new YearMonth(2023, 11), allPeriods.get(0));
+        assertEquals(new YearMonth(2023, 10), allPeriods.get(1));
+        assertEquals(new YearMonth(2023, 9), allPeriods.get(2));
+        assertEquals(new YearMonth(2021, 12), allPeriods.get(3));
     }
 }
