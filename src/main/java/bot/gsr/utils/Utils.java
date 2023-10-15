@@ -63,6 +63,19 @@ public class Utils {
     }
 
     /**
+     * Возвращает строку с логом в виде:
+     * дата ("yyyy-MM-dd"),"описание",цена,"категория",(?"тип сессии")
+     */
+    @SuppressWarnings("GrazieInspection")
+    public static String getCSV(bot.gsr.model.Log log) {
+        return "\"" + log.date() + "\"," +
+                "\"" + log.description() + "\"," +
+                log.price() + "," +
+                "\"" + log.category().getName() + "\"," +
+                (log.sessionType() == null ? "" : "\"" + log.sessionType().getName() + "\"");
+    }
+
+    /**
      * @param month месяц
      * @return номер месяца - 1, Январь = 0
      */

@@ -5,13 +5,15 @@ import bot.gsr.TestConfig;
 import bot.gsr.model.Category;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
@@ -30,10 +32,6 @@ class LogRepositoryImplTest {
     @BeforeEach
     void setUp() {
         logRepository.createTableIfNotExists();
-    }
-
-    @AfterEach
-    void tearDown() {
         logRepository.clearAllData();
     }
 
@@ -136,5 +134,81 @@ class LogRepositoryImplTest {
         logRepository.createTableIfNotExists();
         tableExists = logRepository.isTableExists();
         assertTrue(tableExists);
+    }
+
+    @Test
+    @DisplayName("Создание дампа")
+    void makeDump() {
+        Date date = Date.valueOf("2023-10-15");
+        String desc1 = "desc1";
+        Log log1 = new Log(date, desc1, 2600, Category.SESSION, SessionType.SR);
+        logRepository.addLog(log1);
+
+        Date date2 = Date.valueOf("2023-10-14");
+        String desc2 = "desc2";
+        Log log2 = new Log(date2, desc2, 4000, Category.DIAGNOSTIC, null);
+        logRepository.addLog(log2);
+
+        logRepository.addLog(log1);
+
+        String backupFilePath = "src/main/test/resources/dump.csv";
+        logRepository.makeDump(backupFilePath);
+        String expectedCsvOutput = """
+                date,description,price,category,session_type
+                "2023-10-14","desc2",4000,"Диагностика",
+                "2023-10-15","desc1",2600,"Сессия","Судьба Рода"
+                "2023-10-15","desc1",2600,"Сессия","Судьба Рода"
+                """;
+
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(backupFilePath));
+            StringBuilder scvOutput = new StringBuilder();
+
+            for (String line : lines) {
+                scvOutput.append(line).append("\n");
+            }
+
+            String fileContent = scvOutput.toString();
+            assertEquals(expectedCsvOutput, fileContent);
+            System.out.println(fileContent);
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    @Test
+    @DisplayName("Применение дампа")
+    void applyDump() {
+        String backupFilePath = "src/main/test/resources/dump.csv";
+        String csvBackup = """
+                date,description,price,category,session_type
+                "2023-10-14","desc2",4000,"Диагностика",
+                "2023-10-15","desc1",2600,"Сессия","Судьба Рода"
+                "2023-10-15","desc1",2600,"Сессия","Судьба Рода\"""";
+
+        try {
+            Files.write(Paths.get(backupFilePath), csvBackup.getBytes());
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            fail();
+        }
+
+        String currentDirectory = System.getProperty("user.dir");
+        logRepository.applyDump(currentDirectory + "/" + backupFilePath);
+
+        List<Log> logs = logRepository.getLogs(LogsFilter.EMPTY);
+        assertEquals(3, logs.size());
+
+        Log log1 = new Log(Date.valueOf("2023-10-15"), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
+
+        assertTrue(logs.contains(log1));
+        assertTrue(logs.contains(log2));
+
+        long log1amount = logs.stream()
+                .filter(log -> log.equals(log1))
+                .count();
+        assertEquals(2, log1amount);
     }
 }

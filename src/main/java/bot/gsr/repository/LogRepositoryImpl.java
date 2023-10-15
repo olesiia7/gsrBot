@@ -4,11 +4,15 @@ import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.Category;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
+import bot.gsr.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,6 +144,31 @@ public class LogRepositoryImpl implements LogRepository {
         SessionType sessionType = sessionTypeName == null ? null : SessionType.getSessionType(sessionTypeName);
         return new Log(date, description, price, category, sessionType);
     }
+
+    @Override
+    public void makeDump(String backupFilePath) {
+        List<Log> logs = getLogs(LogsFilter.EMPTY);
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(backupFilePath))) {
+            writer.write(ALL_COLUMNS);
+            writer.newLine();
+
+            for (Log log : logs) {
+                writer.write(Utils.getCSV(log));
+                writer.newLine();
+            }
+
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public void applyDump(String backupFilePath) {
+        String sql = String.format("COPY %s(%s) FROM '%s' WITH CSV HEADER;", TABLE_NAME, ALL_COLUMNS, backupFilePath);
+        execute(dataSource, sql);
+    }
+
 
     @Override
     public void createTableIfNotExists() {

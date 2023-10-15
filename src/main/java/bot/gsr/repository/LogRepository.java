@@ -31,6 +31,10 @@ public interface LogRepository {
 
     List<Log> getLogs(LogsFilter filter);
 
+    void makeDump(@NotNull String backupFilePath);
+
+    void applyDump(@NotNull String backupFilePath);
+
     default <T> T executeQuery(@NotNull DataSource dataSource,
                                @NotNull String SQL,
                                @NotNull Function<ResultSet, T> resultSetProcessor) {
