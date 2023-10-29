@@ -1,6 +1,7 @@
 package bot.gsr.events;
 
-import bot.gsr.SQLite.model.Log;
+
+import bot.gsr.model.Log;
 
 /**
  * Добавляет Log в базу данных

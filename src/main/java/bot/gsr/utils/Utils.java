@@ -1,8 +1,8 @@
 package bot.gsr.utils;
 
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.Log;
-import bot.gsr.SQLite.model.SessionType;
+import bot.gsr.model.Category;
+import bot.gsr.model.Log;
+import bot.gsr.model.SessionType;
 import org.springframework.lang.Nullable;
 
 import javax.validation.constraints.NotNull;
@@ -15,8 +15,9 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
-import static bot.gsr.SQLite.model.Category.EXPERT_SUPPORT;
-import static bot.gsr.SQLite.model.Category.ONE_PLUS;
+import static bot.gsr.model.Category.EXPERT_SUPPORT;
+import static bot.gsr.model.Category.ONE_PLUS;
+
 
 public class Utils {
     public static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
@@ -49,18 +50,6 @@ public class Utils {
         return PRICE_FORMAT.format(price) + " ₽";
     }
 
-    /**
-     * Возвращает строку с логом в виде:
-     * дата (dd.MM.yyyy),"описание",цена,категория,(?тип сессии)
-     */
-    @SuppressWarnings("GrazieInspection")
-    public static String getCSV(Log log) {
-        return Utils.getDate(log.date()) + "," +
-                "\"" + log.description() + "\"," +
-                log.price() + "," +
-                log.category().getName() + "," +
-                (log.sessionType() == null ? "" : log.sessionType().getName());
-    }
 
     /**
      * Возвращает строку с логом в виде:

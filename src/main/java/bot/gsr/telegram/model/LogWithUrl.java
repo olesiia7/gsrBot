@@ -1,8 +1,8 @@
 package bot.gsr.telegram.model;
 
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.Log;
-import bot.gsr.SQLite.model.SessionType;
+import bot.gsr.model.Category;
+import bot.gsr.model.Log;
+import bot.gsr.model.SessionType;
 import org.springframework.lang.Nullable;
 
 public record LogWithUrl(Log log, @Nullable String url) {

@@ -1,8 +1,8 @@
 package bot.gsr.utils;
 
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.Log;
-import bot.gsr.SQLite.model.SessionType;
+import bot.gsr.model.Category;
+import bot.gsr.model.Log;
+import bot.gsr.model.SessionType;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -59,10 +59,10 @@ public final class CSVLogParser {
             }
             if (sessionTypes != null) {
                 for (SessionType sessionType : sessionTypes) {
-                    logs.add(new Log(null, date, description, price, category, sessionType));
+                    logs.add(new Log(date, description, price, category, sessionType));
                 }
             } else {
-                logs.add(new Log(null, date, description, price, category, null));
+                logs.add(new Log(date, description, price, category, null));
             }
         }
         return logs;

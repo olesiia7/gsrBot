@@ -100,9 +100,6 @@ public class LogRepositoryImpl implements LogRepository {
         boolean needAnd = false;
         where.append("\nWHERE ");
         if (filter.getDate() != null) {
-            if (needAnd) {
-                where.append(" AND ");
-            }
             where.append(C_DATE).append("='").append(filter.getDate()).append("'");
             needAnd = true;
         }

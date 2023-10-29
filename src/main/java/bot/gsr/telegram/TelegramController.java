@@ -1,7 +1,7 @@
 package bot.gsr.telegram;
 
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.SessionType;
+import bot.gsr.model.Category;
+import bot.gsr.model.SessionType;
 import bot.gsr.telegram.model.Decision;
 import bot.gsr.telegram.model.LogDecision;
 import bot.gsr.telegram.model.LogWithUrl;
@@ -95,7 +95,7 @@ public class TelegramController {
                 deleteMarkupAndVerifyLog(log);
                 return;
             }
-            Category newCategory = Category.findByName((String) answer);
+            Category newCategory = Category.getCategory((String) answer);
             SessionType sessionType = log.log().sessionType();
             if (newCategory != Category.SESSION) {
                 sessionType = null;
@@ -114,7 +114,7 @@ public class TelegramController {
                 deleteMarkupAndVerifyLog(log);
                 return;
             }
-            SessionType newSessionType = SessionType.findByName((String) answer);
+            SessionType newSessionType = SessionType.getSessionType((String) answer);
             Category category = Category.SESSION;
             deleteMarkupAndVerifyLog(LogWithUrl.getLogWithNewCategoryAndSessionType(log, category, newSessionType));
         });

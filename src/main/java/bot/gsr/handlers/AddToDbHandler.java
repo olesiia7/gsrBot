@@ -1,15 +1,13 @@
 package bot.gsr.handlers;
 
-import bot.gsr.SQLite.DbController;
-import bot.gsr.SQLite.model.Log;
 import bot.gsr.events.AddToDbEvent;
+import bot.gsr.model.Log;
+import bot.gsr.service.LogService;
 import bot.gsr.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-
-import java.sql.SQLException;
 
 /**
  *  Добавляет событие в БД
@@ -17,16 +15,16 @@ import java.sql.SQLException;
 @Component
 public class AddToDbHandler {
     private final Logger logger = LoggerFactory.getLogger(AddToDbHandler.class);
-    private final DbController dbController;
+    private final LogService logService;
 
-    public AddToDbHandler(DbController dbController) {
-        this.dbController = dbController;
+    public AddToDbHandler(LogService logService) {
+        this.logService = logService;
     }
 
     @EventListener
-    public void handleEvent(AddToDbEvent event) throws SQLException {
+    public void handleEvent(AddToDbEvent event) {
         Log log = event.log();
-        dbController.addLog(log);
+        logService.addLog(log);
         logger.info(Utils.getCSV(event.log()));
     }
 }

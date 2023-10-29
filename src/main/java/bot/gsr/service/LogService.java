@@ -25,7 +25,7 @@ public class LogService {
         return repository.getLogs(filter);
     }
 
-    List<Log> getLastLogs(LogFilter filter, int amount) {
+    public List<Log> getLastLogs(LogFilter filter, int amount) {
         return repository.getLastLogs(filter, amount);
     }
 
