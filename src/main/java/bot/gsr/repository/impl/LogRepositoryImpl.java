@@ -1,6 +1,5 @@
 package bot.gsr.repository.impl;
 
-import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.*;
 import bot.gsr.repository.LogRepository;
 import bot.gsr.telegram.model.YearMonth;
@@ -20,9 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static bot.gsr.SQLite.model.LogsTable.C_ID;
-import static bot.gsr.SQLite.model.LogsTable.getLogField;
 
 @Repository
 public class LogRepositoryImpl implements LogRepository {
@@ -74,7 +70,7 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
-    public List<Log> getLogs(LogsFilter filter) {
+    public List<Log> getLogs(LogFilter filter) {
         String sql = "SELECT " + ALL_COLUMNS + " FROM " + TABLE_NAME +
                 buildWhere(filter) +
                 "\nORDER BY " + C_DATE + " ASC;";
@@ -98,17 +94,13 @@ public class LogRepositoryImpl implements LogRepository {
         };
     }
 
-    private String buildWhere(LogsFilter filter) {
+    private String buildWhere(LogFilter filter) {
         if (filter.isEmpty()) {
             return "";
         }
         StringBuilder where = new StringBuilder();
         boolean needAnd = false;
         where.append("\nWHERE ");
-        if (filter.getId() != null) {
-            where.append(getLogField(C_ID)).append("=").append(filter.getId());
-            needAnd = true;
-        }
         if (filter.getDate() != null) {
             if (needAnd) {
                 where.append(" AND ");
@@ -151,7 +143,7 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
-    public List<Log> getLastLogs(LogsFilter filter, int amount) {
+    public List<Log> getLastLogs(LogFilter filter, int amount) {
         String sql = String.format("""
                         SELECT %s FROM %s %s
                         ORDER BY %s DESC
@@ -312,7 +304,7 @@ public class LogRepositoryImpl implements LogRepository {
 
     @Override
     public void makeDump(String backupFilePath) {
-        List<Log> logs = getLogs(LogsFilter.EMPTY);
+        List<Log> logs = getLogs(LogFilter.EMPTY);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(backupFilePath))) {
             writer.write(ALL_COLUMNS);

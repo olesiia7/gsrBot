@@ -1,6 +1,5 @@
 package bot.gsr.repository.impl;
 
-import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.TestConfig;
 import bot.gsr.model.*;
 import bot.gsr.telegram.model.YearMonth;
@@ -19,9 +18,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static bot.gsr.SQLite.model.Category.DIAGNOSTIC;
-import static bot.gsr.SQLite.model.Category.SESSION;
-import static bot.gsr.SQLite.model.SessionType.SR;
+import static bot.gsr.model.Category.*;
+import static bot.gsr.model.SessionType.SR;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = TestConfig.class)
@@ -42,18 +40,18 @@ class LogRepositoryImplTest {
     @DisplayName("Добавление логов")
     void addLog() {
         Date now = Date.valueOf(LocalDate.now());
-        Log log = new Log(now, "desc", 2600, Category.SESSION, SessionType.RANG);
+        Log log = new Log(now, "desc", 2600, SESSION, SessionType.RANG);
         logRepository.addLog(log);
-        List<Log> logs = logRepository.getLogs(LogsFilter.EMPTY);
+        List<Log> logs = logRepository.getLogs(LogFilter.EMPTY);
         assertFalse(logs.isEmpty());
         assertEquals(1, logs.size());
 
         assertEquals(log, logs.get(0));
 
         logRepository.clearAllData();
-        log = new Log(now, "desc", 2600, Category.SESSION, null);
+        log = new Log(now, "desc", 2600, SESSION, null);
         logRepository.addLog(log);
-        logs = logRepository.getLogs(LogsFilter.EMPTY);
+        logs = logRepository.getLogs(LogFilter.EMPTY);
         assertFalse(logs.isEmpty());
         assertEquals(1, logs.size());
 
@@ -65,50 +63,50 @@ class LogRepositoryImplTest {
     void getLogs() {
         Date now = Date.valueOf(LocalDate.now());
         String desc1 = "desc1";
-        Log log1 = new Log(now, desc1, 2600, Category.SESSION, SessionType.SR);
+        Log log1 = new Log(now, desc1, 2600, SESSION, SR);
         logRepository.addLog(log1);
 
         Date dayAgo = Date.valueOf(LocalDate.now().minusDays(1));
         String desc2 = "desc2";
-        Log log2 = new Log(dayAgo, desc2, 4000, Category.DIAGNOSTIC, null);
+        Log log2 = new Log(dayAgo, desc2, 4000, DIAGNOSTIC, null);
         logRepository.addLog(log2);
 
-        List<Log> logs = logRepository.getLogs(LogsFilter.EMPTY);
+        List<Log> logs = logRepository.getLogs(LogFilter.EMPTY);
         assertEquals(2, logs.size());
 
         // date
-        LogsFilter.Builder builder = new LogsFilter.Builder().setDate(dayAgo);
+        LogFilter.Builder builder = new LogFilter.Builder().setDate(dayAgo);
         logs = logRepository.getLogs(builder.build());
         assertEquals(1, logs.size());
         assertEquals(log2, logs.get(0));
 
         // description
-        builder = new LogsFilter.Builder().setDescription(desc1);
+        builder = new LogFilter.Builder().setDescription(desc1);
         logs = logRepository.getLogs(builder.build());
         assertEquals(1, logs.size());
         assertEquals(log1, logs.get(0));
 
         // category
-        builder = new LogsFilter.Builder().setCategory(SESSION);
+        builder = new LogFilter.Builder().setCategory(SESSION);
         logs = logRepository.getLogs(builder.build());
         assertEquals(1, logs.size());
         assertEquals(log1, logs.get(0));
 
         // session type
-        builder = new LogsFilter.Builder().setSessionType(SR);
+        builder = new LogFilter.Builder().setSessionType(SR);
         logs = logRepository.getLogs(builder.build());
         assertEquals(1, logs.size());
         assertEquals(log1, logs.get(0));
 
         // description + category
-        builder = new LogsFilter.Builder()
+        builder = new LogFilter.Builder()
                 .setDescription(log1.description())
                 .setCategory(SESSION);
         logs = logRepository.getLogs(builder.build());
         assertEquals(1, logs.size());
         assertEquals(log1, logs.get(0));
 
-        builder = new LogsFilter.Builder()
+        builder = new LogFilter.Builder()
                 .setDescription(log2.description())
                 .setCategory(SESSION);
         logs = logRepository.getLogs(builder.build());
@@ -116,7 +114,7 @@ class LogRepositoryImplTest {
 
         // добавим еще одну запись
         logRepository.addLog(log1);
-        builder = new LogsFilter.Builder().setCategory(SESSION);
+        builder = new LogFilter.Builder().setCategory(SESSION);
         logs = logRepository.getLogs(builder.build());
         assertEquals(2, logs.size());
         List<Log> expected = List.of(log1, log1);
@@ -144,12 +142,12 @@ class LogRepositoryImplTest {
     void makeDump() {
         Date date = Date.valueOf("2023-10-15");
         String desc1 = "desc1";
-        Log log1 = new Log(date, desc1, 2600, Category.SESSION, SessionType.SR);
+        Log log1 = new Log(date, desc1, 2600, SESSION, SR);
         logRepository.addLog(log1);
 
         Date date2 = Date.valueOf("2023-10-14");
         String desc2 = "desc2";
-        Log log2 = new Log(date2, desc2, 4000, Category.DIAGNOSTIC, null);
+        Log log2 = new Log(date2, desc2, 4000, DIAGNOSTIC, null);
         logRepository.addLog(log2);
 
         logRepository.addLog(log1);
@@ -199,11 +197,11 @@ class LogRepositoryImplTest {
         String currentDirectory = System.getProperty("user.dir");
         logRepository.applyDump(currentDirectory + "/" + backupFilePath);
 
-        List<Log> logs = logRepository.getLogs(LogsFilter.EMPTY);
+        List<Log> logs = logRepository.getLogs(LogFilter.EMPTY);
         assertEquals(3, logs.size());
 
-        Log log1 = new Log(Date.valueOf("2023-10-15"), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
+        Log log1 = new Log(Date.valueOf("2023-10-15"), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, DIAGNOSTIC, null);
 
         assertTrue(logs.contains(log1));
         assertTrue(logs.contains(log2));
@@ -217,10 +215,10 @@ class LogRepositoryImplTest {
     @Test
     @DisplayName("Последние записи по фильтру")
     void getLastLogs() {
-        Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
-        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, Category.PG2, null);
-        Log log4 = new Log(Date.valueOf("2023-10-13"), "desc4", 10_000, Category.SESSION, null);
+        Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-10-13"), "desc4", 10_000, SESSION, null);
 
         logRepository.addLog(log1);
         logRepository.addLog(log2);
@@ -228,16 +226,16 @@ class LogRepositoryImplTest {
         logRepository.addLog(log4);
 
         // amount > записей
-        List<Log> lastLogs = logRepository.getLastLogs(LogsFilter.EMPTY, 5);
+        List<Log> lastLogs = logRepository.getLastLogs(LogFilter.EMPTY, 5);
         assertEquals(4, lastLogs.size());
 
         // последняя запись по всем категориям
-        lastLogs = logRepository.getLastLogs(LogsFilter.EMPTY, 1);
+        lastLogs = logRepository.getLastLogs(LogFilter.EMPTY, 1);
         assertEquals(1, lastLogs.size());
         assertEquals(lastLogs.get(0), log3);
 
         // последняя запись категории (из 2)
-        LogsFilter.Builder builder = new LogsFilter.Builder().setCategory(SESSION);
+        LogFilter.Builder builder = new LogFilter.Builder().setCategory(SESSION);
         lastLogs = logRepository.getLastLogs(builder.build(), 1);
         assertEquals(1, lastLogs.size());
         assertEquals(lastLogs.get(0), log4);
@@ -247,7 +245,7 @@ class LogRepositoryImplTest {
         assertEquals(2, lastLogs.size());
 
         // не существует
-        builder = new LogsFilter.Builder().setCategory(DIAGNOSTIC).setDescription("desc1");
+        builder = new LogFilter.Builder().setCategory(DIAGNOSTIC).setDescription("desc1");
         lastLogs = logRepository.getLastLogs(builder.build(), 1);
         assertEquals(0, lastLogs.size());
     }
@@ -255,10 +253,10 @@ class LogRepositoryImplTest {
     @Test
     @DisplayName("Последние сессия / диагностика")
     void getLastSessionOrDiagnostic() {
-        Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
-        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, Category.PG2, null);
-        Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, Category.SESSION, null);
+        Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, SESSION, null);
 
         logRepository.addLog(log1);
         logRepository.addLog(log2);
@@ -270,7 +268,7 @@ class LogRepositoryImplTest {
         assertTrue(lastSessionOrDiagnostic.contains(log2.description()));
         assertTrue(lastSessionOrDiagnostic.contains(log4.description()));
 
-        Log log5 = new Log(Date.valueOf("2023-10-15"), "desc4", 10_000, Category.SESSION, null);
+        Log log5 = new Log(Date.valueOf("2023-10-15"), "desc4", 10_000, SESSION, null);
         logRepository.addLog(log5);
 
         lastSessionOrDiagnostic = logRepository.getLastSessionOrDiagnostic();
@@ -281,11 +279,11 @@ class LogRepositoryImplTest {
     @Test
     @DisplayName("Все годы - месяцы в таблице")
     void getAllPeriods() {
-        Log log1 = new Log(Date.valueOf("2023-09-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
-        Log log3 = new Log(Date.valueOf("2023-11-15"), "desc3", 5000, Category.PG2, null);
-        Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, Category.SESSION, null);
-        Log log5 = new Log(Date.valueOf("2021-12-14"), "desc4", 10_000, Category.SESSION, null);
+        Log log1 = new Log(Date.valueOf("2023-09-12"), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-11-15"), "desc3", 5000, PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, SESSION, null);
+        Log log5 = new Log(Date.valueOf("2021-12-14"), "desc4", 10_000, SESSION, null);
 
         logRepository.addLog(log1);
         logRepository.addLog(log2);
@@ -303,12 +301,13 @@ class LogRepositoryImplTest {
     }
 
     @Test
+    @DisplayName("Отчёт по категории")
     void getCategorySummary() {
-        Log log1 = new Log(Date.valueOf("2022-10-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
-        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, Category.PG2, null);
-        Log log4 = new Log(Date.valueOf("2023-11-14"), "desc4", 10_000, Category.SESSION, null);
-        Log log5 = new Log(Date.valueOf("2023-12-14"), "desc4", 10_000, Category.SESSION, null);
+        Log log1 = new Log(Date.valueOf("2022-10-12"), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-11-14"), "desc4", 10_000, SESSION, null);
+        Log log5 = new Log(Date.valueOf("2023-12-14"), "desc4", 10_000, SESSION, null);
 
         logRepository.addLog(log1);
         logRepository.addLog(log2);
@@ -318,9 +317,9 @@ class LogRepositoryImplTest {
 
         // все
         List<CategorySummary> actual = logRepository.getCategorySummary(null, null);
-        CategorySummary allSessions = new CategorySummary(Category.SESSION, 3, 2600 + 10_000 + 10_000);
-        CategorySummary diagnostic = new CategorySummary(Category.DIAGNOSTIC, 1, 4000);
-        CategorySummary pg2 = new CategorySummary(Category.PG2, 1, 5000);
+        CategorySummary allSessions = new CategorySummary(SESSION, 3, 2600 + 10_000 + 10_000);
+        CategorySummary diagnostic = new CategorySummary(DIAGNOSTIC, 1, 4000);
+        CategorySummary pg2 = new CategorySummary(PG2, 1, 5000);
 
         List<CategorySummary> expected = new ArrayList<>(List.of(allSessions, diagnostic, pg2));
         assertTrue(expected.containsAll(actual));
@@ -328,7 +327,7 @@ class LogRepositoryImplTest {
 
         // с годом
         actual = logRepository.getCategorySummary("2022", null);
-        CategorySummary in2022 = new CategorySummary(Category.SESSION, 1, 2600);
+        CategorySummary in2022 = new CategorySummary(SESSION, 1, 2600);
 
         assertEquals(1, actual.size());
         assertEquals(in2022, actual.get(0));
@@ -360,6 +359,7 @@ class LogRepositoryImplTest {
     }
 
     @Test
+    @DisplayName("Отчет помесячно SHORT")
     void getShortMonthlySummary() {
         List<MonthlyReport> result = logRepository.getShortMonthlySummary(0);
         assertEquals(0, result.size());
@@ -373,9 +373,9 @@ class LogRepositoryImplTest {
         LocalDate minus1Month = today.minusMonths(1);
         String minus1MonthPeriod = minus1Month.format(formatter_yyyy_MM);
 
-        Log log1 = new Log(Date.valueOf(today), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf(yesterday), "desc2", 4000, Category.DIAGNOSTIC, null);
-        Log log3 = new Log(Date.valueOf(minus1Month), "desc3", 10_000, Category.SESSION, null);
+        Log log1 = new Log(Date.valueOf(today), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf(yesterday), "desc2", 4000, DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf(minus1Month), "desc3", 10_000, SESSION, null);
 
         logRepository.addLog(log1);
         logRepository.addLog(log2);
@@ -403,6 +403,7 @@ class LogRepositoryImplTest {
     }
 
     @Test
+    @DisplayName("Отчет помесячно SHORT")
     void getExtendedMonthlySummary() {
         List<MonthlyReport> result = logRepository.getExtendedMonthlySummary(0);
         assertEquals(0, result.size());
@@ -416,9 +417,9 @@ class LogRepositoryImplTest {
         LocalDate minus1Month = today.minusMonths(1);
         String minus1MonthPeriod = minus1Month.format(formatter_yyyy_MM);
 
-        Log log1 = new Log(Date.valueOf(today), "desc1", 2600, Category.SESSION, SessionType.SR);
-        Log log2 = new Log(Date.valueOf(yesterday), "desc2", 4000, Category.SESSION, null);
-        Log log3 = new Log(Date.valueOf(minus1Month), "desc3", 10_000, Category.DIAGNOSTIC, null);
+        Log log1 = new Log(Date.valueOf(today), "desc1", 2600, SESSION, SR);
+        Log log2 = new Log(Date.valueOf(yesterday), "desc2", 4000, SESSION, null);
+        Log log3 = new Log(Date.valueOf(minus1Month), "desc3", 10_000, DIAGNOSTIC, null);
         Log log4 = new Log(Date.valueOf(minus1Month), "desc4", 15_000, Category.PG1, null);
 
         logRepository.addLog(log1);
@@ -437,8 +438,8 @@ class LogRepositoryImplTest {
         assertEquals(actualReport.getTotalSpent(), actual.priceSum());
 
         CategorySummary expected = twoInTodayMonth
-                ? new CategorySummary(Category.SESSION, 2, log1.price() + log2.price())
-                : new CategorySummary(Category.SESSION, 1, log1.price());
+                ? new CategorySummary(SESSION, 2, log1.price() + log2.price())
+                : new CategorySummary(SESSION, 1, log1.price());
 
         assertEquals(expected, actual);
         assertEquals(expected.priceSum(), actualReport.getTotalSpent());
@@ -455,8 +456,8 @@ class LogRepositoryImplTest {
         actual = summaries.get(0);
 
         expected = twoInTodayMonth
-                ? new CategorySummary(Category.SESSION, 2, log1.price() + log2.price())
-                : new CategorySummary(Category.SESSION, 1, log1.price());
+                ? new CategorySummary(SESSION, 2, log1.price() + log2.price())
+                : new CategorySummary(SESSION, 1, log1.price());
 
         assertEquals(expected, actual);
         assertEquals(expected.priceSum(), actualReport.getTotalSpent());
@@ -467,12 +468,12 @@ class LogRepositoryImplTest {
 
         int expectedSummariesAmount = 2;
         List<CategorySummary> expectedList = new ArrayList<>();
-        expectedList.add(new CategorySummary(Category.DIAGNOSTIC, 1, log3.price()));
+        expectedList.add(new CategorySummary(DIAGNOSTIC, 1, log3.price()));
         expectedList.add(new CategorySummary(Category.PG1, 1, log4.price()));
         int expectedTotalSpent = log3.price() + log4.price();
 
         if (!twoInTodayMonth) {
-            expectedList.add(new CategorySummary(Category.SESSION, 1, log2.price()));
+            expectedList.add(new CategorySummary(SESSION, 1, log2.price()));
             expectedSummariesAmount = 3;
             expectedTotalSpent += log2.price();
         }

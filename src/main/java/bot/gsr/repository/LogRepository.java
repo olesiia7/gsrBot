@@ -1,8 +1,8 @@
 package bot.gsr.repository;
 
-import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
+import bot.gsr.model.LogFilter;
 import bot.gsr.model.MonthlyReport;
 import bot.gsr.repository.impl.LogRepositoryImpl;
 import bot.gsr.telegram.model.YearMonth;
@@ -34,9 +34,9 @@ public interface LogRepository {
 
     void addLog(@NotNull Log log);
 
-    List<Log> getLogs(@NotNull LogsFilter filter);
+    List<Log> getLogs(@NotNull LogFilter filter);
 
-    List<Log> getLastLogs(@NotNull LogsFilter filter, int amount);
+    List<Log> getLastLogs(@NotNull LogFilter filter, int amount);
 
     List<String> getLastSessionOrDiagnostic();
 

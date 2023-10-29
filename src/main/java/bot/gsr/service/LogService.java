@@ -1,8 +1,8 @@
 package bot.gsr.service;
 
-import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
+import bot.gsr.model.LogFilter;
 import bot.gsr.model.MonthlyReport;
 import bot.gsr.repository.LogRepository;
 import bot.gsr.telegram.model.YearMonth;
@@ -19,11 +19,11 @@ public class LogService {
         this.repository = repository;
     }
 
-    public List<Log> getLogs(LogsFilter filter) {
+    public List<Log> getLogs(LogFilter filter) {
         return repository.getLogs(filter);
     }
 
-    List<Log> getLastLogs(LogsFilter filter, int amount) {
+    List<Log> getLastLogs(LogFilter filter, int amount) {
         return repository.getLastLogs(filter, amount);
     }
 
