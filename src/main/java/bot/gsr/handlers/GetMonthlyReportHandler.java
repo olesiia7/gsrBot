@@ -3,12 +3,12 @@ package bot.gsr.handlers;
 import bot.gsr.SQLite.DbController;
 import bot.gsr.events.GetMonthlyReportEvent;
 import bot.gsr.events.SendMeTelegramMessageEvent;
+import bot.gsr.model.MonthlyReportType;
 import bot.gsr.telegram.AnswerListener;
 import bot.gsr.telegram.MarkupFactory;
 import bot.gsr.telegram.commands.QueryCommand;
 import bot.gsr.telegram.model.CategorySummary;
 import bot.gsr.telegram.model.MonthlyCategorySummary;
-import bot.gsr.telegram.model.MonthlyReportForm;
 import bot.gsr.telegram.model.MonthlySummary;
 import bot.gsr.utils.Utils;
 import org.springframework.context.event.EventListener;
@@ -97,9 +97,9 @@ public class GetMonthlyReportHandler {
                 Подробная – общая сумма за месяц + траты по категориям""";
         AnswerListener listener = answer -> {
             String answerForm = (String) answer;
-            MonthlyReportForm reportForm = switch (answerForm) {
-                case SHORT_FORM -> MonthlyReportForm.SHORT;
-                case EXTENDED_FORM -> MonthlyReportForm.EXTENDED;
+            MonthlyReportType reportForm = switch (answerForm) {
+                case SHORT_FORM -> MonthlyReportType.SHORT;
+                case EXTENDED_FORM -> MonthlyReportType.EXTENDED;
                 default -> null;
             };
             if (reportForm == null) {
@@ -112,7 +112,7 @@ public class GetMonthlyReportHandler {
     }
 
 
-    private void provideFormReport(int months, MonthlyReportForm reportForm) {
+    private void provideFormReport(int months, MonthlyReportType reportForm) {
         StringBuilder sb = new StringBuilder("*Отчёт за " + declineMonth(months + 1) + ":*\n\n");
         String text = switch (reportForm) {
             case SHORT -> {

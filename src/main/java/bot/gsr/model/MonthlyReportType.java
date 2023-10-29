@@ -1,6 +1,6 @@
-package bot.gsr.telegram.model;
+package bot.gsr.model;
 
-public enum MonthlyReportForm {
+public enum MonthlyReportType {
     SHORT, // только общая сумма за месяц
     EXTENDED // траты по категориям + общая сумма за месяц
 }

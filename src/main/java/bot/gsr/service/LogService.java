@@ -3,6 +3,7 @@ package bot.gsr.service;
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
+import bot.gsr.model.MonthlyReport;
 import bot.gsr.repository.LogRepository;
 import bot.gsr.telegram.model.YearMonth;
 import org.springframework.lang.Nullable;
@@ -44,25 +45,24 @@ public class LogService {
         return repository.getAllPeriods();
     }
 
-//    /**
-//     * Получаем расширенный отчет (с тратами по категориям) за {@code months}
-//     *
-//     * @param months кол-во месяцев, начиная с 0
-//     */
-//    public List<MonthlyCategorySummary> getExtendedMonthlySummary(int months) {
-//        return repository.getExtendedMonthlySummary(months);
-//    }
+    /**
+     * Получаем отчет (сумма потраченного) за {@code months}
+     *
+     * @param months кол-во месяцев, начиная с 0 (если 0 – то результаты будут за текущий месяц)
+     */
+    public List<MonthlyReport> getShortMonthlySummary(int months) {
+        return repository.getShortMonthlySummary(months);
+    }
 
-    //ToDo GSRBOT-7 миграция
-//    /**
-//     * Получаем отчет (сумма потраченного) за {@code months}
-//     *
-//     * @param months кол-во месяцев, начиная с 0
-//     */
-//    public List<MonthlySummary> getMonthlySummary(int months) {
-//        return repository.getMonthlySummary(months);
-//    }
-//
+    /**
+     * Получаем расширенный отчет (с тратами по категориям) за {@code months}
+     *
+     * @param months кол-во месяцев, начиная с 0 (если 0 – то результаты будут за текущий месяц)
+     */
+    public List<MonthlyReport> getExtendedMonthlySummary(int months) {
+        return repository.getExtendedMonthlySummary(months);
+    }
+
 
     /**
      * @param year  год. Если {@code null}, то за любой год

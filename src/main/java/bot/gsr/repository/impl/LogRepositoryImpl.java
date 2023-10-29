@@ -1,10 +1,7 @@
 package bot.gsr.repository.impl;
 
 import bot.gsr.SQLite.LogsFilter;
-import bot.gsr.model.Category;
-import bot.gsr.model.CategorySummary;
-import bot.gsr.model.Log;
-import bot.gsr.model.SessionType;
+import bot.gsr.model.*;
 import bot.gsr.repository.LogRepository;
 import bot.gsr.telegram.model.YearMonth;
 import bot.gsr.utils.Utils;
@@ -226,6 +223,85 @@ public class LogRepositoryImpl implements LogRepository {
                     int priceSum = resultSet.getInt(3);
                     result.add(new CategorySummary(category, count, priceSum));
                 }
+            } catch (SQLException e) {
+                logger.error(sql, e);
+            }
+            return result;
+        };
+        return executeQuery(dataSource, sql, rsProcessor);
+    }
+
+    @Override
+    public List<MonthlyReport> getShortMonthlySummary(int months) {
+        String monthColumn = "month";
+        String totalPriceColumn = "total_price";
+        String sql = "SELECT TO_CHAR(" + C_DATE + ", 'YYYY-MM') AS " + monthColumn + ",\n" +
+                "SUM(" + C_PRICE + ") AS " + totalPriceColumn + "\n" +
+                "FROM " + TABLE_NAME + "\n" +
+                "WHERE date >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '" + months + " MONTHS')::date\n" +
+                "AND " + C_DATE + " <= CURRENT_DATE::date\n" +
+                "GROUP BY " + monthColumn + "\n" +
+                "ORDER BY " + monthColumn + " DESC";
+
+        Function<ResultSet, List<MonthlyReport>> rsProcessor = resultSet -> {
+            List<MonthlyReport> result = new ArrayList<>();
+            try {
+                while (resultSet.next()) {
+                    String period = resultSet.getString(monthColumn);
+                    int totalPrice = resultSet.getInt(totalPriceColumn);
+                    result.add(MonthlyReport.shortMonthlyReport(period, totalPrice));
+                }
+
+            } catch (SQLException e) {
+                logger.error(sql, e);
+            }
+            return result;
+        };
+        return executeQuery(dataSource, sql, rsProcessor);
+    }
+
+    @Override
+    public List<MonthlyReport> getExtendedMonthlySummary(int months) {
+        String monthColumn = "month";
+        String countColumn = "count";
+        String totalPriceColumn = "total_price";
+        String sql = "SELECT TO_CHAR(" + C_DATE + ", 'YYYY-MM') AS " + monthColumn + ",\n" +
+                C_CATEGORY + ",\n" +
+                "COUNT(*) AS " + countColumn + ",\n" +
+                "SUM(" + C_PRICE + ") AS " + totalPriceColumn + "\n" +
+                "FROM " + TABLE_NAME + "\n" +
+                "WHERE date >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '" + months + " MONTHS')::date\n" +
+                "AND " + C_DATE + " <= CURRENT_DATE::date\n" +
+                "GROUP BY " + monthColumn + ", " + C_CATEGORY + "\n" +
+                "ORDER BY " + monthColumn + " DESC, " + C_CATEGORY;
+
+        Function<ResultSet, List<MonthlyReport>> rsProcessor = resultSet -> {
+            List<MonthlyReport> result = new ArrayList<>();
+            List<CategorySummary> categorySummaries = new ArrayList<>();
+            String prevPeriod = null;
+            try {
+                while (resultSet.next()) {
+                    // month, category, count, total_price
+                    String currentPeriod = resultSet.getString(monthColumn);
+                    Category category = Category.getCategory(resultSet.getString(C_CATEGORY));
+                    int count = resultSet.getInt(countColumn);
+                    int priceSum = resultSet.getInt(totalPriceColumn);
+                    if (!currentPeriod.equals(prevPeriod)) {
+                        if (prevPeriod != null) {
+                            result.add(MonthlyReport.extendedMonthlyReport(prevPeriod, categorySummaries));
+                            categorySummaries = new ArrayList<>();
+                        }
+                        categorySummaries.add(new CategorySummary(category, count, priceSum));
+                        prevPeriod = currentPeriod;
+                    } else {
+                        categorySummaries.add(new CategorySummary(category, count, priceSum));
+                    }
+                }
+                if (prevPeriod != null) {
+                    result.add(MonthlyReport.extendedMonthlyReport(prevPeriod, categorySummaries));
+                }
+                return result;
+
             } catch (SQLException e) {
                 logger.error(sql, e);
             }

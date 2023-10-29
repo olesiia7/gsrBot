@@ -2,10 +2,7 @@ package bot.gsr.repository.impl;
 
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.TestConfig;
-import bot.gsr.model.Category;
-import bot.gsr.model.CategorySummary;
-import bot.gsr.model.Log;
-import bot.gsr.model.SessionType;
+import bot.gsr.model.*;
 import bot.gsr.telegram.model.YearMonth;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = TestConfig.class)
 class LogRepositoryImplTest {
+    private final DateTimeFormatter formatter_yyyy_MM = DateTimeFormatter.ofPattern("yyyy-MM");
 
     @SuppressWarnings("unused")
     @Autowired
@@ -358,5 +357,129 @@ class LogRepositoryImplTest {
         // не существует
         actual = logRepository.getCategorySummary("2022", "11");
         assertEquals(0, actual.size());
+    }
+
+    @Test
+    void getShortMonthlySummary() {
+        List<MonthlyReport> result = logRepository.getShortMonthlySummary(0);
+        assertEquals(0, result.size());
+
+        LocalDate today = LocalDate.now();
+        String todayPeriod = today.format(formatter_yyyy_MM);
+
+        LocalDate yesterday = today.minusDays(1);
+        boolean twoInTodayMonth = today.getMonth() == yesterday.getMonth(); // yesterday в today месяце
+
+        LocalDate minus1Month = today.minusMonths(1);
+        String minus1MonthPeriod = minus1Month.format(formatter_yyyy_MM);
+
+        Log log1 = new Log(Date.valueOf(today), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf(yesterday), "desc2", 4000, Category.DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf(minus1Month), "desc3", 10_000, Category.SESSION, null);
+
+        logRepository.addLog(log1);
+        logRepository.addLog(log2);
+        logRepository.addLog(log3);
+
+        result = logRepository.getShortMonthlySummary(0);
+        assertEquals(1, result.size());
+
+        MonthlyReport actualReport = result.get(0);
+        assertTrue(actualReport.getSummaries().isEmpty());
+        assertEquals(todayPeriod, actualReport.getPeriod());
+        assertEquals(twoInTodayMonth ? log1.price() + log2.price() : log1.price(), actualReport.getTotalSpent());
+
+        result = logRepository.getShortMonthlySummary(1);
+        assertEquals(2, result.size());
+        actualReport = result.get(0);
+        assertTrue(actualReport.getSummaries().isEmpty());
+        assertEquals(todayPeriod, actualReport.getPeriod());
+        assertEquals(twoInTodayMonth ? log1.price() + log2.price() : log1.price(), actualReport.getTotalSpent());
+
+        actualReport = result.get(1);
+        assertTrue(actualReport.getSummaries().isEmpty());
+        assertEquals(minus1MonthPeriod, actualReport.getPeriod());
+        assertEquals(twoInTodayMonth ? log3.price() : log2.price() + log3.price(), actualReport.getTotalSpent());
+    }
+
+    @Test
+    void getExtendedMonthlySummary() {
+        List<MonthlyReport> result = logRepository.getExtendedMonthlySummary(0);
+        assertEquals(0, result.size());
+
+        LocalDate today = LocalDate.now();
+        String todayPeriod = today.format(formatter_yyyy_MM);
+
+        LocalDate yesterday = today.minusDays(1);
+        boolean twoInTodayMonth = today.getMonth() == yesterday.getMonth(); // yesterday в today месяце
+
+        LocalDate minus1Month = today.minusMonths(1);
+        String minus1MonthPeriod = minus1Month.format(formatter_yyyy_MM);
+
+        Log log1 = new Log(Date.valueOf(today), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf(yesterday), "desc2", 4000, Category.SESSION, null);
+        Log log3 = new Log(Date.valueOf(minus1Month), "desc3", 10_000, Category.DIAGNOSTIC, null);
+        Log log4 = new Log(Date.valueOf(minus1Month), "desc4", 15_000, Category.PG1, null);
+
+        logRepository.addLog(log1);
+        logRepository.addLog(log2);
+        logRepository.addLog(log3);
+        logRepository.addLog(log4);
+
+        result = logRepository.getExtendedMonthlySummary(0);
+        assertEquals(1, result.size());
+
+        MonthlyReport actualReport = result.get(0);
+        assertEquals(todayPeriod, actualReport.getPeriod());
+        List<CategorySummary> summaries = actualReport.getSummaries();
+        assertEquals(1, summaries.size());
+        CategorySummary actual = summaries.get(0);
+        assertEquals(actualReport.getTotalSpent(), actual.priceSum());
+
+        CategorySummary expected = twoInTodayMonth
+                ? new CategorySummary(Category.SESSION, 2, log1.price() + log2.price())
+                : new CategorySummary(Category.SESSION, 1, log1.price());
+
+        assertEquals(expected, actual);
+        assertEquals(expected.priceSum(), actualReport.getTotalSpent());
+
+        // за этот и предыдущий месяц
+
+        result = logRepository.getExtendedMonthlySummary(1);
+        assertEquals(2, result.size());
+
+        actualReport = result.get(0);
+        assertEquals(todayPeriod, actualReport.getPeriod());
+        summaries = actualReport.getSummaries();
+        assertEquals(1, summaries.size());
+        actual = summaries.get(0);
+
+        expected = twoInTodayMonth
+                ? new CategorySummary(Category.SESSION, 2, log1.price() + log2.price())
+                : new CategorySummary(Category.SESSION, 1, log1.price());
+
+        assertEquals(expected, actual);
+        assertEquals(expected.priceSum(), actualReport.getTotalSpent());
+
+        actualReport = result.get(1);
+        assertEquals(minus1MonthPeriod, actualReport.getPeriod());
+        summaries = actualReport.getSummaries();
+
+        int expectedSummariesAmount = 2;
+        List<CategorySummary> expectedList = new ArrayList<>();
+        expectedList.add(new CategorySummary(Category.DIAGNOSTIC, 1, log3.price()));
+        expectedList.add(new CategorySummary(Category.PG1, 1, log4.price()));
+        int expectedTotalSpent = log3.price() + log4.price();
+
+        if (!twoInTodayMonth) {
+            expectedList.add(new CategorySummary(Category.SESSION, 1, log2.price()));
+            expectedSummariesAmount = 3;
+            expectedTotalSpent += log2.price();
+        }
+        assertEquals(expectedSummariesAmount, summaries.size());
+        assertTrue(expectedList.containsAll(summaries));
+        assertTrue(summaries.containsAll(expectedList));
+
+        assertEquals(expectedTotalSpent, actualReport.getTotalSpent());
     }
 }
