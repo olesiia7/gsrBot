@@ -1,7 +1,7 @@
 package bot.gsr.telegram;
 
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.SessionType;
+import bot.gsr.model.Category;
+import bot.gsr.model.SessionType;
 import bot.gsr.telegram.model.Decision;
 import bot.gsr.telegram.model.ReportType;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;

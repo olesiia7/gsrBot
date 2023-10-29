@@ -1,5 +1,6 @@
 package bot.gsr.telegram;
 
+import bot.gsr.telegram.commands.QueryCommand;
 import bot.gsr.telegraph.model.Page;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Assertions;
@@ -12,7 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import static bot.gsr.telegram.TelegramUtils.formatPageMessage;
 
-@SpringBootTest(classes = {TelegramController.class, TelegramService.class})
+@SpringBootTest(classes = {TelegramController.class, TelegramService.class, QueryCommand.class})
 @TestPropertySource(properties = "spring.main.banner-mode=off")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TelegramControllerTest {

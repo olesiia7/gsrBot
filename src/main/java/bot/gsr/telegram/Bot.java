@@ -2,6 +2,7 @@ package bot.gsr.telegram;
 
 import bot.gsr.telegram.commands.AddLogCommand;
 import bot.gsr.telegram.commands.CheckNewLogsCommand;
+import bot.gsr.telegram.commands.GetBackupCommand;
 import bot.gsr.telegram.commands.QueryCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,8 @@ public final class Bot extends TelegramLongPollingCommandBot {
     public Bot(String botToken, String botName,
                QueryCommand queryCommand,
                AddLogCommand addLogCommand,
-               CheckNewLogsCommand checkNewLogsCommand) {
+               CheckNewLogsCommand checkNewLogsCommand,
+               GetBackupCommand getBackupCommand) {
         super(botToken);
         this.botName = botName;
 
@@ -32,6 +34,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
         register(queryCommand);
         register(addLogCommand);
         register(checkNewLogsCommand);
+        register(getBackupCommand);
     }
 
     public void setListener(AnswerListener listener) {

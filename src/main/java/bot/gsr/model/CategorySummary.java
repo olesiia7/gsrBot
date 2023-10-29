@@ -1,6 +1,4 @@
-package bot.gsr.telegram.model;
-
-import bot.gsr.SQLite.model.Category;
+package bot.gsr.model;
 
 public record CategorySummary(Category category, int count, int priceSum) {
 }

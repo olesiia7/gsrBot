@@ -1,15 +1,13 @@
 package bot.gsr.handlers;
 
-import bot.gsr.SQLite.DbController;
 import bot.gsr.events.GetMonthlyReportEvent;
 import bot.gsr.events.SendMeTelegramMessageEvent;
+import bot.gsr.model.MonthlyReport;
+import bot.gsr.model.MonthlyReportType;
+import bot.gsr.service.LogService;
 import bot.gsr.telegram.AnswerListener;
 import bot.gsr.telegram.MarkupFactory;
 import bot.gsr.telegram.commands.QueryCommand;
-import bot.gsr.telegram.model.CategorySummary;
-import bot.gsr.telegram.model.MonthlyCategorySummary;
-import bot.gsr.telegram.model.MonthlyReportForm;
-import bot.gsr.telegram.model.MonthlySummary;
 import bot.gsr.utils.Utils;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -23,7 +21,7 @@ import static bot.gsr.utils.Utils.getMonth;
 
 @Component
 public class GetMonthlyReportHandler {
-    private final DbController dbController;
+    private final LogService logService;
     private final EventManager manager;
 
     private final String CHOSE_PERIOD_TEXT = "Выберите период или введите нужное кол-во месяцев, \nгде 0 - текущий месяц, 1 – текущий + предыдущий и т.д.";
@@ -39,8 +37,8 @@ public class GetMonthlyReportHandler {
     private final ReplyKeyboardMarkup PERIOD_MARKUP = getPeriodMarkup();
     private final ReplyKeyboardMarkup FORM_MARKUP = getFormMarkup();
 
-    public GetMonthlyReportHandler(DbController dbController, EventManager manager) {
-        this.dbController = dbController;
+    public GetMonthlyReportHandler(LogService logService, EventManager manager) {
+        this.logService = logService;
         this.manager = manager;
     }
 
@@ -61,9 +59,9 @@ public class GetMonthlyReportHandler {
             String answerPeriod = (String) answer;
             Integer months = switch (answerPeriod) {
                 case CURRENT_MONTH -> 0;
-                case THREE_MONTHS -> 2;
-                case SIX_MONTHS -> 5;
-                case YEAR -> 11;
+                case THREE_MONTHS -> 3;
+                case SIX_MONTHS -> 6;
+                case YEAR -> 12;
                 default -> {
                     try {
                         yield Integer.parseInt(answerPeriod);
@@ -97,9 +95,9 @@ public class GetMonthlyReportHandler {
                 Подробная – общая сумма за месяц + траты по категориям""";
         AnswerListener listener = answer -> {
             String answerForm = (String) answer;
-            MonthlyReportForm reportForm = switch (answerForm) {
-                case SHORT_FORM -> MonthlyReportForm.SHORT;
-                case EXTENDED_FORM -> MonthlyReportForm.EXTENDED;
+            MonthlyReportType reportForm = switch (answerForm) {
+                case SHORT_FORM -> MonthlyReportType.SHORT;
+                case EXTENDED_FORM -> MonthlyReportType.EXTENDED;
                 default -> null;
             };
             if (reportForm == null) {
@@ -112,27 +110,24 @@ public class GetMonthlyReportHandler {
     }
 
 
-    private void provideFormReport(int months, MonthlyReportForm reportForm) {
-        StringBuilder sb = new StringBuilder("*Отчёт за " + declineMonth(months + 1) + ":*\n\n");
+    private void provideFormReport(int months, MonthlyReportType reportForm) {
+        StringBuilder sb = new StringBuilder("*Отчёт за " + declineMonth(months) + ":*\n\n");
         String text = switch (reportForm) {
             case SHORT -> {
                 sb.append("```\n");
-                List<MonthlySummary> monthlySummary = dbController.getMonthlySummary(months);
-                monthlySummary.forEach(summary -> sb.append(String.format("%-14s: %s\n", getDate(summary.period()), Utils.formatPrice(summary.totalPrice()))));
+                List<MonthlyReport> monthlySummary = logService.getShortMonthlySummary(months);
+                monthlySummary.forEach(report -> sb.append(String.format("%-14s: %s\n", getDate(report.getPeriod()), Utils.formatPrice(report.getTotalSpent()))));
                 sb.append("```");
                 yield sb.toString();
             }
             case EXTENDED -> {
-                List<MonthlyCategorySummary> extendedMonthlySummary = dbController.getExtendedMonthlySummary(months);
+                List<MonthlyReport> extendedMonthlySummary = logService.getExtendedMonthlySummary(months);
                 extendedMonthlySummary
-                        .forEach(summary -> {
-                            int monthPriceSum = summary.summaries().stream()
-                                    .mapToInt(CategorySummary::priceSum)
-                                    .sum();
-                            sb.append("*").append(getDate(summary.period())).append(":* ")
-                                    .append(Utils.formatPrice(monthPriceSum))
+                        .forEach(report -> {
+                            sb.append("*").append(getDate(report.getPeriod())).append(":* ")
+                                    .append(Utils.formatPrice(report.getTotalSpent()))
                                     .append("\n\n");
-                            sb.append(QueryCommand.getReportByCategories(summary.summaries(), false))
+                            sb.append(QueryCommand.getReportByCategories(report.getSummaries(), false))
                                     .append("\n\n");
                         });
                 yield sb.toString();

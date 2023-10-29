@@ -1,16 +1,15 @@
 package bot.gsr.handlers;
 
-import bot.gsr.SQLite.DbController;
-import bot.gsr.SQLite.LogsFilter;
-import bot.gsr.SQLite.model.Log;
 import bot.gsr.events.ConvertDbToCSVEvent;
+import bot.gsr.model.Log;
+import bot.gsr.model.LogFilter;
+import bot.gsr.service.LogService;
 import bot.gsr.utils.Utils;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -18,15 +17,15 @@ import java.util.List;
  */
 @Component
 public class ConvertDbToCSVHandler {
-    private final DbController dbController;
+    private final LogService logService;
 
-    public ConvertDbToCSVHandler(DbController dbController) {
-        this.dbController = dbController;
+    public ConvertDbToCSVHandler(LogService logService) {
+        this.logService = logService;
     }
 
     @EventListener
-    public void handleEvent(ConvertDbToCSVEvent event) throws SQLException, IOException {
-        List<Log> logs = dbController.getLogs(LogsFilter.EMPTY);
+    public void handleEvent(ConvertDbToCSVEvent event) throws IOException {
+        List<Log> logs = logService.getLogs(LogFilter.EMPTY);
         if (logs.isEmpty()) {
             return;
         }
@@ -35,7 +34,7 @@ public class ConvertDbToCSVHandler {
             csvWriter.append(titles);
 
             for (Log log : logs) {
-                csvWriter.append(Utils.getCSV(log));
+                csvWriter.append(Utils.getCSV(log)).append("\n");
             }
 
             csvWriter.flush();

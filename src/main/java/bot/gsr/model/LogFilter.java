@@ -1,30 +1,21 @@
-package bot.gsr.SQLite;
-
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.SessionType;
+package bot.gsr.model;
 
 import javax.validation.constraints.NotNull;
 import java.sql.Date;
 
-public class LogsFilter {
-    public static final LogsFilter EMPTY = new LogsFilter(Builder.EMPTY);
+public class LogFilter {
+    public static final LogFilter EMPTY = new LogFilter(Builder.EMPTY);
 
-    private final Integer id;
     private final Date date;
     private final String description;
     private final Category category;
     private final SessionType sessionType;
 
-    private LogsFilter(Builder builder) {
-        this.id = builder.id;
+    private LogFilter(Builder builder) {
         this.date = builder.date;
         this.description = builder.description;
         this.category = builder.category;
         this.sessionType = builder.sessionType;
-    }
-
-    public Integer getId() {
-        return id;
     }
 
     public Date getDate() {
@@ -44,13 +35,13 @@ public class LogsFilter {
     }
 
     public boolean isEmpty() {
-        return id == null && date == null && description == null && category == null && sessionType == null;
+        return date == null && description == null && category == null && sessionType == null;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("LogsFilter{");
+        sb.append("LogFilter{");
         if (date != null) {
             sb.append("date=").append(date).append(", ");
         }
@@ -70,18 +61,12 @@ public class LogsFilter {
     public static class Builder {
         static final Builder EMPTY = new Builder();
 
-        private Integer id;
         private Date date;
         private String description;
         private Category category;
         private SessionType sessionType;
 
         public Builder() {
-        }
-
-        public Builder setId(int id) {
-            this.id = id;
-            return this;
         }
 
         public Builder setDate(@NotNull Date date) {
@@ -104,8 +89,8 @@ public class LogsFilter {
             return this;
         }
 
-        public LogsFilter build() {
-            return new LogsFilter(this);
+        public LogFilter build() {
+            return new LogFilter(this);
         }
     }
 }

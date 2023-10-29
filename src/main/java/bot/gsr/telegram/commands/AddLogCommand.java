@@ -1,9 +1,9 @@
 package bot.gsr.telegram.commands;
 
-import bot.gsr.SQLite.model.Category;
-import bot.gsr.SQLite.model.Log;
 import bot.gsr.events.VerifyAndPublishLogEvent;
 import bot.gsr.handlers.EventManager;
+import bot.gsr.model.Category;
+import bot.gsr.model.Log;
 import bot.gsr.telegram.Bot;
 import bot.gsr.telegram.model.LogWithUrl;
 import bot.gsr.utils.Utils;
@@ -51,7 +51,7 @@ public class AddLogCommand extends BotCommand {
             message.setText(text);
             message.setReplyMarkup(EDIT_CATEGORY_MARKUP);
             bot.setListener(answer -> {
-                Category category = Category.findByName((String) answer);
+                Category category = Category.getCategory((String) answer);
                 if (category == Category.EXPERT_SUPPORT
                         || category == Category.ONE_PLUS) {
                     enterPeriod(category);

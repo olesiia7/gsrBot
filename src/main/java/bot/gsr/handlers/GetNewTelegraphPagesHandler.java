@@ -1,7 +1,7 @@
 package bot.gsr.handlers;
 
-import bot.gsr.SQLite.model.Log;
 import bot.gsr.events.GetNewTelegraphPagesEvent;
+import bot.gsr.model.Log;
 import bot.gsr.telegram.model.LogWithUrl;
 import bot.gsr.telegraph.TelegraphController;
 import bot.gsr.telegraph.model.Page;

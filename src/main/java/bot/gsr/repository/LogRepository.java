@@ -1,12 +1,18 @@
 package bot.gsr.repository;
 
-import bot.gsr.SQLite.LogsFilter;
+import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
+import bot.gsr.model.LogFilter;
+import bot.gsr.model.MonthlyReport;
+import bot.gsr.repository.impl.LogRepositoryImpl;
+import bot.gsr.telegram.model.YearMonth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 import javax.sql.DataSource;
 import javax.validation.constraints.NotNull;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,9 +33,27 @@ public interface LogRepository {
 
     void dropTableIfExists();
 
-    void addLog(Log log);
+    void addLog(@NotNull Log log);
 
-    List<Log> getLogs(LogsFilter filter);
+    List<Log> getLogs(@NotNull LogFilter filter);
+
+    List<Log> getLastLogs(@NotNull LogFilter filter, int amount);
+
+    List<String> getLastSessionOrDiagnostic();
+
+    List<YearMonth> getAllPeriods();
+
+    List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month);
+
+    List<MonthlyReport> getShortMonthlySummary(int months);
+
+    List<MonthlyReport> getExtendedMonthlySummary(int months);
+
+    void createDump(@NotNull String backupFilePath);
+
+    InputStream getDump();
+
+    void applyDump(@NotNull String backupFilePath);
 
     default <T> T executeQuery(@NotNull DataSource dataSource,
                                @NotNull String SQL,
@@ -44,7 +68,7 @@ public interface LogRepository {
         return null;
     }
 
-    default void execute(DataSource dataSource, String SQL) {
+    default void execute(@NotNull DataSource dataSource, @NotNull String SQL) {
         try (Connection con = dataSource.getConnection()) {
             Statement statement = con.createStatement();
             statement.execute(SQL);
@@ -53,7 +77,7 @@ public interface LogRepository {
         }
     }
 
-    private static void logError(String SQL, SQLException e) {
+    private static void logError(@NotNull String SQL, @NotNull SQLException e) {
         Optional<String> calledMethod = Arrays.stream(e.getStackTrace())
                 .filter(stack -> stack.getClassName().equals(LogRepositoryImpl.class.getName()))
                 .map(stack -> {

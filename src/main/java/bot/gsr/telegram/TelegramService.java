@@ -2,6 +2,7 @@ package bot.gsr.telegram;
 
 import bot.gsr.telegram.commands.AddLogCommand;
 import bot.gsr.telegram.commands.CheckNewLogsCommand;
+import bot.gsr.telegram.commands.GetBackupCommand;
 import bot.gsr.telegram.commands.QueryCommand;
 import bot.gsr.telegram.model.LogWithUrl;
 import org.slf4j.Logger;
@@ -39,19 +40,22 @@ public class TelegramService {
     private final QueryCommand queryCommand;
     private final AddLogCommand addLogCommand;
     private final CheckNewLogsCommand checkNewLogsCommand;
+    private final GetBackupCommand getBackupCommand;
     private final Logger logger = LoggerFactory.getLogger(TelegramService.class);
 
     public TelegramService(QueryCommand queryCommand,
                            AddLogCommand addLogCommand,
-                           CheckNewLogsCommand checkNewLogsCommand) {
+                           CheckNewLogsCommand checkNewLogsCommand,
+                           GetBackupCommand getBackupCommand) {
         this.queryCommand = queryCommand;
         this.addLogCommand = addLogCommand;
         this.checkNewLogsCommand = checkNewLogsCommand;
+        this.getBackupCommand = getBackupCommand;
     }
 
     @PostConstruct
     private void init() {
-        this.bot = new Bot(botToken, botName, queryCommand, addLogCommand, checkNewLogsCommand);
+        this.bot = new Bot(botToken, botName, queryCommand, addLogCommand, checkNewLogsCommand, getBackupCommand);
     }
 
     public boolean connectToBot() {
