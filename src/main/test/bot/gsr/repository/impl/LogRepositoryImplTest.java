@@ -153,7 +153,7 @@ class LogRepositoryImplTest {
         logRepository.addLog(log1);
 
         String backupFilePath = "src/main/test/resources/dump.csv";
-        logRepository.makeDump(backupFilePath);
+        logRepository.createDump(backupFilePath);
         String expectedCsvOutput = """
                 date,description,price,category,session_type
                 "2023-10-14","desc2",4000,"Диагностика",
@@ -403,7 +403,7 @@ class LogRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("Отчет помесячно SHORT")
+    @DisplayName("Отчет помесячно EXTENDED")
     void getExtendedMonthlySummary() {
         List<MonthlyReport> result = logRepository.getExtendedMonthlySummary(0);
         assertEquals(0, result.size());

@@ -61,9 +61,9 @@ public class GetMonthlyReportHandler {
             String answerPeriod = (String) answer;
             Integer months = switch (answerPeriod) {
                 case CURRENT_MONTH -> 0;
-                case THREE_MONTHS -> 2;
-                case SIX_MONTHS -> 5;
-                case YEAR -> 11;
+                case THREE_MONTHS -> 3;
+                case SIX_MONTHS -> 6;
+                case YEAR -> 12;
                 default -> {
                     try {
                         yield Integer.parseInt(answerPeriod);
@@ -113,7 +113,7 @@ public class GetMonthlyReportHandler {
 
 
     private void provideFormReport(int months, MonthlyReportType reportForm) {
-        StringBuilder sb = new StringBuilder("*Отчёт за " + declineMonth(months + 1) + ":*\n\n");
+        StringBuilder sb = new StringBuilder("*Отчёт за " + declineMonth(months) + ":*\n\n");
         String text = switch (reportForm) {
             case SHORT -> {
                 sb.append("```\n");

@@ -45,7 +45,11 @@ public class ApplicationStarter implements ApplicationRunner {
         }
 
         if (convertDbToCsv) {
-            eventManager.handleEvent(new ConvertDbToCSVEvent("src/main/resources/db.csv"));
+            String pathForResult = "src/main/resources/db.csv";
+            eventManager.handleEvent(new ConvertDbToCSVEvent(pathForResult));
+            logService.createTableIfNotExists();
+            String currentDirectory = System.getProperty("user.dir");
+            logService.applyDump(currentDirectory + "/" + pathForResult);
         }
     }
 }

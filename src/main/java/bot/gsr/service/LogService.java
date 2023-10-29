@@ -9,6 +9,8 @@ import bot.gsr.telegram.model.YearMonth;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import javax.validation.constraints.NotNull;
+import java.io.InputStream;
 import java.util.List;
 
 @Service
@@ -75,5 +77,17 @@ public class LogService {
 
     public void createTableIfNotExists() {
         repository.createTableIfNotExists();
+    }
+
+    public void createDump(@NotNull String pathToDump) {
+        repository.createDump(pathToDump);
+    }
+
+    public InputStream getDump() {
+        return repository.getDump();
+    }
+
+    public void applyDump(@NotNull String pathToDump) {
+        repository.applyDump(pathToDump);
     }
 }

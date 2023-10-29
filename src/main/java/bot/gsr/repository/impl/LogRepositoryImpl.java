@@ -10,9 +10,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -303,7 +301,7 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
-    public void makeDump(String backupFilePath) {
+    public void createDump(String backupFilePath) {
         List<Log> logs = getLogs(LogFilter.EMPTY);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(backupFilePath))) {
@@ -318,6 +316,27 @@ public class LogRepositoryImpl implements LogRepository {
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
+    }
+
+    public InputStream getDump() {
+        List<Log> logs = getLogs(LogFilter.EMPTY);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            // Записываем заголовок в поток
+            outputStream.write(ALL_COLUMNS.getBytes());
+            outputStream.write(System.lineSeparator().getBytes());
+
+            // Записываем данные в поток
+            for (Log log : logs) {
+                outputStream.write(Utils.getCSV(log).getBytes());
+                outputStream.write(System.lineSeparator().getBytes());
+            }
+
+            return new ByteArrayInputStream(outputStream.toByteArray());
+
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
+        return null;
     }
 
     @Override

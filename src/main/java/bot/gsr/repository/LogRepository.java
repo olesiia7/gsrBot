@@ -12,6 +12,7 @@ import org.springframework.lang.Nullable;
 
 import javax.sql.DataSource;
 import javax.validation.constraints.NotNull;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,7 +49,9 @@ public interface LogRepository {
 
     List<MonthlyReport> getExtendedMonthlySummary(int months);
 
-    void makeDump(@NotNull String backupFilePath);
+    void createDump(@NotNull String backupFilePath);
+
+    InputStream getDump();
 
     void applyDump(@NotNull String backupFilePath);
 
