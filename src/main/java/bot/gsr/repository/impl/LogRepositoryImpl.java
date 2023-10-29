@@ -2,6 +2,7 @@ package bot.gsr.repository.impl;
 
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.model.Category;
+import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
 import bot.gsr.repository.LogRepository;
@@ -9,6 +10,7 @@ import bot.gsr.telegram.model.YearMonth;
 import bot.gsr.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -199,6 +201,30 @@ public class LogRepositoryImpl implements LogRepository {
                     int year = resultSet.getInt(1);
                     int month = resultSet.getInt(2);
                     result.add(new YearMonth(year, month));
+                }
+            } catch (SQLException e) {
+                logger.error(sql, e);
+            }
+            return result;
+        };
+        return executeQuery(dataSource, sql, rsProcessor);
+    }
+
+    @Override
+    public List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month) {
+        String sql = "SELECT " + C_CATEGORY + ", COUNT(*) AS count, SUM(" + C_PRICE + ") AS total_price " +
+                "FROM logs\n" +
+                "WHERE (" + year + " IS NULL OR EXTRACT(YEAR FROM " + C_DATE + ") = " + year + ")\n" +
+                "AND (" + month + " IS NULL OR EXTRACT(MONTH FROM " + C_DATE + ") = " + month + ")\n" +
+                "GROUP BY " + C_CATEGORY;
+        Function<ResultSet, List<CategorySummary>> rsProcessor = resultSet -> {
+            List<CategorySummary> result = new ArrayList<>();
+            try {
+                while (resultSet.next()) {
+                    Category category = Category.getCategory(resultSet.getString(C_CATEGORY));
+                    int count = resultSet.getInt(2);
+                    int priceSum = resultSet.getInt(3);
+                    result.add(new CategorySummary(category, count, priceSum));
                 }
             } catch (SQLException e) {
                 logger.error(sql, e);

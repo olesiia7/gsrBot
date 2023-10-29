@@ -1,11 +1,13 @@
 package bot.gsr.repository;
 
 import bot.gsr.SQLite.LogsFilter;
+import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
 import bot.gsr.repository.impl.LogRepositoryImpl;
 import bot.gsr.telegram.model.YearMonth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 
 import javax.sql.DataSource;
 import javax.validation.constraints.NotNull;
@@ -39,9 +41,9 @@ public interface LogRepository {
 
     List<YearMonth> getAllPeriods();
 
+    List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month);
+
     //ToDo GSRBOT-7 миграция
-//    List<CategorySummary> getCategorySummary(@Nullable String period);
-//
 //    List<MonthlyCategorySummary> getExtendedMonthlySummary(int months);
 //
 //    List<MonthlySummary> getMonthlySummary(int months);

@@ -1,9 +1,11 @@
 package bot.gsr.service;
 
 import bot.gsr.SQLite.LogsFilter;
+import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
 import bot.gsr.repository.LogRepository;
 import bot.gsr.telegram.model.YearMonth;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,7 +44,6 @@ public class LogService {
         return repository.getAllPeriods();
     }
 
-    //ToDo GSRBOT-7 миграция
 //    /**
 //     * Получаем расширенный отчет (с тратами по категориям) за {@code months}
 //     *
@@ -51,7 +52,8 @@ public class LogService {
 //    public List<MonthlyCategorySummary> getExtendedMonthlySummary(int months) {
 //        return repository.getExtendedMonthlySummary(months);
 //    }
-//
+
+    //ToDo GSRBOT-7 миграция
 //    /**
 //     * Получаем отчет (сумма потраченного) за {@code months}
 //     *
@@ -61,13 +63,15 @@ public class LogService {
 //        return repository.getMonthlySummary(months);
 //    }
 //
-//    /**
-//     * @param period период в виде yyyy-mm (если null, то за всё время)
-//     * @return Получаем категорию + кол-во в ней + сумма расходов
-//     */
-//    public List<CategorySummary> getCategorySummary(@Nullable String period) {
-//        return repository.getCategorySummary(period);
-//    }
+
+    /**
+     * @param year  год. Если {@code null}, то за любой год
+     * @param month месяц. Если {@code null}, то за любой месяц
+     * @return Получаем категорию + кол-во в ней + сумма расходов
+     */
+    public List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month) {
+        return repository.getCategorySummary(year, month);
+    }
 
     public void createTableIfNotExists() {
         repository.createTableIfNotExists();

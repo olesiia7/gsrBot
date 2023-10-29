@@ -3,6 +3,7 @@ package bot.gsr.repository.impl;
 import bot.gsr.SQLite.LogsFilter;
 import bot.gsr.TestConfig;
 import bot.gsr.model.Category;
+import bot.gsr.model.CategorySummary;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
 import bot.gsr.telegram.model.YearMonth;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static bot.gsr.SQLite.model.Category.DIAGNOSTIC;
@@ -299,5 +301,62 @@ class LogRepositoryImplTest {
         assertEquals(new YearMonth(2023, 10), allPeriods.get(1));
         assertEquals(new YearMonth(2023, 9), allPeriods.get(2));
         assertEquals(new YearMonth(2021, 12), allPeriods.get(3));
+    }
+
+    @Test
+    void getCategorySummary() {
+        Log log1 = new Log(Date.valueOf("2022-10-12"), "desc1", 2600, Category.SESSION, SessionType.SR);
+        Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, Category.DIAGNOSTIC, null);
+        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, Category.PG2, null);
+        Log log4 = new Log(Date.valueOf("2023-11-14"), "desc4", 10_000, Category.SESSION, null);
+        Log log5 = new Log(Date.valueOf("2023-12-14"), "desc4", 10_000, Category.SESSION, null);
+
+        logRepository.addLog(log1);
+        logRepository.addLog(log2);
+        logRepository.addLog(log3);
+        logRepository.addLog(log4);
+        logRepository.addLog(log5);
+
+        // все
+        List<CategorySummary> actual = logRepository.getCategorySummary(null, null);
+        CategorySummary allSessions = new CategorySummary(Category.SESSION, 3, 2600 + 10_000 + 10_000);
+        CategorySummary diagnostic = new CategorySummary(Category.DIAGNOSTIC, 1, 4000);
+        CategorySummary pg2 = new CategorySummary(Category.PG2, 1, 5000);
+
+        List<CategorySummary> expected = new ArrayList<>(List.of(allSessions, diagnostic, pg2));
+        assertTrue(expected.containsAll(actual));
+        assertTrue(actual.containsAll(expected));
+
+        // с годом
+        actual = logRepository.getCategorySummary("2022", null);
+        CategorySummary in2022 = new CategorySummary(Category.SESSION, 1, 2600);
+
+        assertEquals(1, actual.size());
+        assertEquals(in2022, actual.get(0));
+
+        // с месяцем
+        actual = logRepository.getCategorySummary(null, "10");
+
+        expected.clear();
+        expected.add(in2022);
+        expected.add(diagnostic);
+        expected.add(pg2);
+
+        assertTrue(expected.containsAll(actual));
+        assertTrue(actual.containsAll(expected));
+
+        // год и месяц
+        actual = logRepository.getCategorySummary("2023", "10");
+
+        expected.clear();
+        expected.add(diagnostic);
+        expected.add(pg2);
+
+        assertTrue(expected.containsAll(actual));
+        assertTrue(actual.containsAll(expected));
+
+        // не существует
+        actual = logRepository.getCategorySummary("2022", "11");
+        assertEquals(0, actual.size());
     }
 }
