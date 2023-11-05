@@ -15,8 +15,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
-import static bot.gsr.model.Category.EXPERT_SUPPORT;
-import static bot.gsr.model.Category.ONE_PLUS;
+import static bot.gsr.model.Category.*;
+import static bot.gsr.model.SessionType.*;
 
 
 public class Utils {
@@ -56,7 +56,7 @@ public class Utils {
      * дата ("yyyy-MM-dd"),"описание",цена,"категория",(?"тип сессии")
      */
     @SuppressWarnings("GrazieInspection")
-    public static String getCSV(bot.gsr.model.Log log) {
+    public static String getCSV(Log log) {
         return "\"" + log.date() + "\"," +
                 "\"" + log.description() + "\"," +
                 log.price() + "," +
@@ -100,38 +100,52 @@ public class Utils {
     public static Log predictLog(@NotNull String description,
                                  @Nullable Category category,
                                  @NotNull Date date) {
-        int price = 0;
         SessionType sessionType = null;
-        if (category == null || category == Category.SESSION) {
-            if (description.contains("Диагностика") && category == null) {
-                category = Category.DIAGNOSTIC;
-            } else if (description.contains("СЧ1")) {
-                price = 5000;
-                sessionType = SessionType.SCH1;
-            } else if (description.contains("СЧ2")) {
-                price = 5000;
-                sessionType = SessionType.SCH2;
-            } else if (description.contains("С#") || description.contains("C#")) {
-                price = 5000;
-                sessionType = SessionType.STRUCTURE;
-            } else if (description.contains("СЧ#1")) {
-                price = 8000;
-                sessionType = SessionType.STRUCTURE_SCH1;
-            } else if (description.contains("СЧ#2")) {
-                price = 8000;
-                sessionType = SessionType.STRUCTURE_SCH2;
-            } else if (description.contains("Ранг в СЧ") || description.contains("Ранговая в СЧ")) {
-                price = 8000;
-                sessionType = SessionType.RANG_SCH1;
-            } else {
-                price = 2600;
-                category = Category.SESSION;
-                sessionType = SessionType.SR;
+        int price = 0;
+        if (category == null) {
+            category = SESSION;
+            if (description.contains("Диагностика")) {
+                category = DIAGNOSTIC;
+            } else if (description.contains("ПГ")) {
+                if (description.contains("ПГ1") && !description.toLowerCase().contains("поток")) {
+                    category = PG1;
+                } else if (description.contains("ПГ2") && !description.toLowerCase().contains("барьер")) {
+                    category = PG2;
+                }
             }
-        } else if (category == EXPERT_SUPPORT) {
-            price = 10_000;
-        } else if (category == ONE_PLUS) {
-            price = 4000;
+        }
+        switch (category) {
+            case SESSION -> {
+                sessionType = SR;
+                price = 2600;
+                if (description.contains("Ранг")) {
+                    sessionType = RANG;
+                    price = 6_000;
+                    if (description.contains("в СЧ")) {
+                        sessionType = RANG_SCH1;
+                        price = 8_000;
+                        if (description.contains("в СЧ2")) {
+                            sessionType = RANG_SCH2;
+                        }
+                    }
+                } else if (description.contains("С#") | description.contains("C#")) {
+                    sessionType = STRUCTURE;
+                    price = 6_000;
+                    if (description.contains("СЧ1")) {
+                        sessionType = STRUCTURE_SCH1;
+                    } else if (description.contains("СЧ2")) {
+                        sessionType = STRUCTURE_SCH2;
+                    }
+                } else if (description.contains("СЧ")) {
+                    sessionType = SCH1;
+                    price = 6_000;
+                    if (description.contains("СЧ2")) {
+                        sessionType = SCH2;
+                    }
+                }
+            }
+            case ONE_PLUS -> price = 4_000;
+            case EXPERT_SUPPORT -> price = 10_000;
         }
         return new Log(date, description, price, category, sessionType);
     }

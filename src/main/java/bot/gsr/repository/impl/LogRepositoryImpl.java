@@ -42,6 +42,16 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
+    public String tableName() {
+        return TABLE_NAME;
+    }
+
+    @Override
+    public DataSource dataSource() {
+        return dataSource;
+    }
+
+    @Override
     public void addLog(Log log) {
         String query = "INSERT INTO " + TABLE_NAME + " ("
                 + C_DATE + ", "
@@ -74,7 +84,7 @@ public class LogRepositoryImpl implements LogRepository {
                 "\nORDER BY " + C_DATE + " ASC;";
 
         Function<ResultSet, List<Log>> resultSetProcessor = getResultSetProcessor(sql);
-        return executeQuery(dataSource, sql, resultSetProcessor);
+        return executeQuery(sql, resultSetProcessor);
     }
 
     private Function<ResultSet, List<Log>> getResultSetProcessor(String sql) {
@@ -144,7 +154,7 @@ public class LogRepositoryImpl implements LogRepository {
                         ORDER BY %s DESC
                         LIMIT %d;""",
                 ALL_COLUMNS, TABLE_NAME, buildWhere(filter), C_DATE, amount);
-        return executeQuery(dataSource, sql, getResultSetProcessor(sql));
+        return executeQuery(sql, getResultSetProcessor(sql));
     }
 
     @Override
@@ -165,7 +175,7 @@ public class LogRepositoryImpl implements LogRepository {
             }
             return lastDescriptions;
         };
-        return executeQuery(dataSource, sql, rsProcessor);
+        return executeQuery(sql, rsProcessor);
     }
 
     private void logError(String sql, SQLException e) {
@@ -191,7 +201,7 @@ public class LogRepositoryImpl implements LogRepository {
             }
             return result;
         };
-        return executeQuery(dataSource, sql, rsProcessor);
+        return executeQuery(sql, rsProcessor);
     }
 
     @Override
@@ -215,7 +225,7 @@ public class LogRepositoryImpl implements LogRepository {
             }
             return result;
         };
-        return executeQuery(dataSource, sql, rsProcessor);
+        return executeQuery(sql, rsProcessor);
     }
 
     @Override
@@ -244,7 +254,7 @@ public class LogRepositoryImpl implements LogRepository {
             }
             return result;
         };
-        return executeQuery(dataSource, sql, rsProcessor);
+        return executeQuery(sql, rsProcessor);
     }
 
     @Override
@@ -294,7 +304,7 @@ public class LogRepositoryImpl implements LogRepository {
             }
             return result;
         };
-        return executeQuery(dataSource, sql, rsProcessor);
+        return executeQuery(sql, rsProcessor);
     }
 
     @Override
@@ -315,6 +325,7 @@ public class LogRepositoryImpl implements LogRepository {
         }
     }
 
+    @Override
     public InputStream getDump() {
         List<Log> logs = getLogs(LogFilter.EMPTY);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -339,9 +350,8 @@ public class LogRepositoryImpl implements LogRepository {
     @Override
     public void applyDump(String backupFilePath) {
         String sql = String.format("COPY %s(%s) FROM '%s' WITH CSV HEADER;", TABLE_NAME, ALL_COLUMNS, backupFilePath);
-        execute(dataSource, sql);
+        execute(sql);
     }
-
 
     @Override
     public void createTableIfNotExists() {
@@ -361,14 +371,6 @@ public class LogRepositoryImpl implements LogRepository {
         }
     }
 
-    public boolean isTableExists() {
-        String sql = "SELECT EXISTS (SELECT 1 FROM information_schema.tables\n" +
-                "WHERE table_schema = 'public'\n" +
-                "AND table_name = '" + TABLE_NAME + "'\n" +
-                ") AS table_exists;";
-        return getBooleanResult(sql);
-    }
-
     private void createTable() {
         String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " ("
                 + "id SERIAL PRIMARY KEY, "
@@ -378,7 +380,7 @@ public class LogRepositoryImpl implements LogRepository {
                 + C_CATEGORY + " " + T_CATEGORY + " NOT NULL, "
                 + C_SESSION_TYPE + " " + T_SESSION_TYPE
                 + ")";
-        execute(dataSource, sql);
+        execute(sql);
     }
 
     private boolean isCategoryExists() {
@@ -393,7 +395,7 @@ public class LogRepositoryImpl implements LogRepository {
                         .map(name -> "'" + name + "'")
                         .collect(Collectors.joining(",")) +
                 ");";
-        execute(dataSource, sql);
+        execute(sql);
     }
 
     private boolean isSessionTypeExists() {
@@ -408,38 +410,18 @@ public class LogRepositoryImpl implements LogRepository {
                         .map(name -> "'" + name + "'")
                         .collect(Collectors.joining(",")) +
                 ");";
-        execute(dataSource, sql);
-    }
-
-    private boolean getBooleanResult(String sql) {
-        Function<ResultSet, Boolean> resultSetProcessor = resultSet -> {
-            try {
-                if (resultSet.next()) {
-                    return resultSet.getBoolean(1);
-                }
-            } catch (SQLException e) {
-                logError(sql, e);
-            }
-            return false;
-        };
-        return executeQuery(dataSource, sql, resultSetProcessor);
+        execute(sql);
     }
 
     @Override
     public void dropTableIfExists() {
         String sql = "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
-        execute(dataSource, sql);
+        execute(sql);
 
         sql = "DROP TYPE IF EXISTS " + T_CATEGORY + ";";
-        execute(dataSource, sql);
+        execute(sql);
 
         sql = "DROP TYPE IF EXISTS " + T_SESSION_TYPE + ";";
-        execute(dataSource, sql);
-    }
-
-    @Override
-    public void clearAllData() {
-        String sql = "DELETE FROM " + TABLE_NAME + ";";
-        execute(dataSource, sql);
+        execute(sql);
     }
 }
