@@ -45,7 +45,7 @@ description: >-
 
 ![](<.gitbook/assets/image (2).png>)
 
-<pre class="language-markdown"><code class="lang-markdown"><strong>**Последняя сессия:**
+<pre class="language-markup"><code class="lang-markup"><strong>**Последняя сессия:**
 </strong>24.10.2023 1PRO (из диагностики), 2 600 ₽
 
 **Последняя диагностика:**
