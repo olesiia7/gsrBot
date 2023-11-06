@@ -1,3 +1,3 @@
 # Table of contents
 
-* [gsrBot](README.md)
+* [GSR Bot](README.md)
