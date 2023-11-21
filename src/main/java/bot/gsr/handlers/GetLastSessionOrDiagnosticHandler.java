@@ -20,7 +20,7 @@ public class GetLastSessionOrDiagnosticHandler {
 
     @EventListener
     public void handleEvent(GetLastSessionOrDiagnosticEvent event) {
-        List<String> lastSessionOrDiagnostic = logService.getLastSessionOrDiagnostic();
+        List<String> lastSessionOrDiagnostic = logService.getLastPageNames();
         event.result().complete(lastSessionOrDiagnostic);
     }
 }

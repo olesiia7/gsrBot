@@ -1,10 +1,15 @@
 package bot.gsr.telegraph;
 
+import bot.gsr.model.Log;
+import bot.gsr.telegram.model.LogWithUrl;
 import bot.gsr.telegraph.model.Page;
 import bot.gsr.telegraph.model.PageList;
+import bot.gsr.utils.Utils;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Component
@@ -27,12 +32,12 @@ public class TelegraphController {
     /**
      * Get pages which are not written in database
      *
-     * @param lastSessionOrDiagnostic last note in database (could be some notes for one day)
+     * @param lastPageNames last note in database (could be some notes for one day)
      */
-    public List<Page> getNewPages(List<String> lastSessionOrDiagnostic) {
+    public List<LogWithUrl> getNewLogs(List<String> lastPageNames) {
         int pagesToLoad = 0;
         int newPagesAmount = 0;
-        List<Page> newPages = new ArrayList<>();
+        List<LogWithUrl> newLogs = new ArrayList<>();
         search:
         while (true) {
             pagesToLoad += 5;
@@ -40,13 +45,18 @@ public class TelegraphController {
             List<Page> pages = pageList.getPages();
             for (; newPagesAmount < pages.size(); newPagesAmount++) {
                 Page page = pages.get(newPagesAmount);
-                if (lastSessionOrDiagnostic.contains(page.getTitle())) {
+                if (lastPageNames.contains(page.getTitle())) {
                     break search;
                 }
-                newPages.add(page);
+                newLogs.add(pageToLogWithUrl(page));
             }
         }
-        return newPages;
+        newLogs.sort(Comparator.comparing(l -> l.log().date()));
+        return newLogs;
     }
 
+    private LogWithUrl pageToLogWithUrl(@NotNull Page page) {
+        Log log = Utils.predictLog(page.getTitle(), null, page.getCreated());
+        return new LogWithUrl(log, page.getUrl());
+    }
 }

@@ -54,7 +54,8 @@ class UtilsTest {
             "Июль 2023;EXPERT_SUPPORT;;10000",
             "Самосессии. Потоки;PG1;;0",
             "Сочи. Доп расходы;OTHER_EXPENSES;;0",
-            "Сочи;SOURCE;;0"
+            "Сочи;SOURCE;;0",
+            "Сессия (нет) на секс;DIAGNOSTIC;;0"
     }, delimiter = ';')
     void predictLogWithCategoryTest(String desc, Category category, SessionType sessionType, int price) {
         Date date = Date.valueOf(LocalDate.now());

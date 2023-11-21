@@ -36,8 +36,8 @@ public class LogService {
     /**
      * Получаем названия последних (по дате) публикаций (их может быть несколько в одну дату)
      */
-    public List<String> getLastSessionOrDiagnostic() {
-        return repository.getLastSessionOrDiagnostic();
+    public List<String> getLastPageNames() {
+        return repository.getLastPageNames();
     }
 
     /**

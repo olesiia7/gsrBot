@@ -16,6 +16,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static bot.gsr.model.Category.*;
@@ -251,11 +252,11 @@ class LogRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("Последние сессия / диагностика")
+    @DisplayName("Последние сессия / диагностика / ПГ1/2")
     void getLastSessionOrDiagnostic() {
         Log log1 = new Log(Date.valueOf("2023-10-12"), "desc1", 2600, SESSION, SR);
         Log log2 = new Log(Date.valueOf("2023-10-14"), "desc2", 4000, DIAGNOSTIC, null);
-        Log log3 = new Log(Date.valueOf("2023-10-15"), "desc3", 5000, PG2, null);
+        Log log3 = new Log(Date.valueOf("2023-10-11"), "desc3", 5000, PG2, null);
         Log log4 = new Log(Date.valueOf("2023-10-14"), "desc4", 10_000, SESSION, null);
 
         logRepository.addLog(log1);
@@ -263,17 +264,29 @@ class LogRepositoryImplTest {
         logRepository.addLog(log3);
         logRepository.addLog(log4);
 
-        List<String> lastSessionOrDiagnostic = logRepository.getLastSessionOrDiagnostic();
-        assertEquals(2, lastSessionOrDiagnostic.size());
-        assertTrue(lastSessionOrDiagnostic.contains(log2.description()));
-        assertTrue(lastSessionOrDiagnostic.contains(log4.description()));
+        List<String> lastPageNames = logRepository.getLastPageNames();
+        assertEquals(2, lastPageNames.size());
+        assertTrue(lastPageNames.contains(log2.description()));
+        assertTrue(lastPageNames.contains(log4.description()));
 
         Log log5 = new Log(Date.valueOf("2023-10-15"), "desc4", 10_000, SESSION, null);
         logRepository.addLog(log5);
 
-        lastSessionOrDiagnostic = logRepository.getLastSessionOrDiagnostic();
-        assertEquals(1, lastSessionOrDiagnostic.size());
-        assertTrue(lastSessionOrDiagnostic.contains(log5.description()));
+        lastPageNames = logRepository.getLastPageNames();
+        assertEquals(1, lastPageNames.size());
+        assertTrue(lastPageNames.contains(log5.description()));
+
+        // проверка, какие категории участвуют в выборке
+        Date date = Date.valueOf("2023-10-16");
+        for (Category category : values()) {
+            logRepository.addLog(new Log(date, category.name(), 1000, category, null));
+        }
+
+        List<String> expectedCategory = Arrays.asList(SESSION.name(), DIAGNOSTIC.name(), PG1.name(), PG2.name());
+        lastPageNames = logRepository.getLastPageNames();
+        assertEquals(expectedCategory.size(), lastPageNames.size());
+        assertTrue(expectedCategory.containsAll(lastPageNames));
+        assertTrue(lastPageNames.containsAll(expectedCategory));
     }
 
     @Test

@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import static bot.gsr.telegram.MarkupFactory.REMOVE_MARKUP;
 
 /**
- * Проверяет новые статьи в bot.gsr.telegraph и публикует их
+ * Проверяет новые статьи в telegraph и публикует их
  */
 @Component
 public class CheckNewLogsCommand extends BotCommand {

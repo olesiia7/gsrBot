@@ -158,12 +158,19 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
-    public List<String> getLastSessionOrDiagnostic() {
+    public List<String> getLastPageNames() {
+        String categories = "'" +
+                String.join("','",
+                        Arrays.asList(Category.DIAGNOSTIC.getName(),
+                                Category.SESSION.getName(),
+                                Category.PG1.getName(),
+                                Category.PG2.getName())) +
+                "'";
         String sql = "SELECT " + C_DESCRIPTION + "\n" +
                 "FROM " + TABLE_NAME + "\n" +
                 "WHERE " + C_DATE + " = (SELECT MAX(" + C_DATE + ") FROM " + TABLE_NAME + "\n" +
-                "WHERE " + C_CATEGORY + " IN('" + Category.DIAGNOSTIC.getName() + "','" + Category.SESSION.getName() + "'))\n" +
-                "AND " + C_CATEGORY + " IN('" + Category.DIAGNOSTIC.getName() + "','" + Category.SESSION.getName() + "');";
+                "WHERE " + C_CATEGORY + " IN(" + categories + "))\n" +
+                "AND " + C_CATEGORY + " IN(" + categories + ");";
         Function<ResultSet, List<String>> rsProcessor = resultSet -> {
             List<String> lastDescriptions = new ArrayList<>();
             try {

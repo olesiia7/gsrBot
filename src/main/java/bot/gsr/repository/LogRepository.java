@@ -18,7 +18,7 @@ public interface LogRepository extends Repository {
 
     List<Log> getLastLogs(@NotNull LogFilter filter, int amount);
 
-    List<String> getLastSessionOrDiagnostic();
+    List<String> getLastPageNames();
 
     List<YearMonth> getAllPeriods();
 
