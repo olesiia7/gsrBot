@@ -47,13 +47,14 @@ public class Page implements TelegraphObject {
         // for this case we will use regexp
         Pattern pattern = Pattern.compile("(\\d{2})-(\\d{2})");
         Matcher matcher = pattern.matcher(url);
-        if (matcher.find()) {
+        while (matcher.find()) {
             int month = Integer.parseInt(matcher.group(1));
             int day = Integer.parseInt(matcher.group(2));
             int currentYear = Calendar.getInstance().get(Calendar.YEAR);
             LocalDate localDate = LocalDate.of(currentYear, month, day);
             created = Date.valueOf(localDate);
-        } else {
+        }
+        if (created == null) {
             System.out.printf("Error while getting date from url %s\n", url);
         }
     }

@@ -117,20 +117,16 @@ public class Utils {
         switch (category) {
             case SESSION -> {
                 sessionType = SR;
-                price = 2600;
                 if (description.contains("Ранг")) {
                     sessionType = RANG;
-                    price = 6_000;
                     if (description.contains("в СЧ")) {
                         sessionType = RANG_SCH1;
-                        price = 8_000;
                         if (description.contains("в СЧ2")) {
                             sessionType = RANG_SCH2;
                         }
                     }
                 } else if (description.contains("С#") | description.contains("C#")) {
                     sessionType = STRUCTURE;
-                    price = 6_000;
                     if (description.contains("СЧ1")) {
                         sessionType = STRUCTURE_SCH1;
                     } else if (description.contains("СЧ2")) {
@@ -138,7 +134,6 @@ public class Utils {
                     }
                 } else if (description.contains("СЧ")) {
                     sessionType = SCH1;
-                    price = 6_000;
                     if (description.contains("СЧ2")) {
                         sessionType = SCH2;
                     }
@@ -147,6 +142,19 @@ public class Utils {
             case ONE_PLUS -> price = 4_000;
             case EXPERT_SUPPORT -> price = 10_000;
         }
+        if (sessionType != null) {
+            price = getSessionTypePrice(sessionType);
+        }
         return new Log(date, description, price, category, sessionType);
+    }
+
+    public static int getSessionTypePrice(SessionType sessionType) {
+        int price = 0;
+        switch (sessionType) {
+            case SR -> price = 2600;
+            case RANG, SCH1, SCH2, STRUCTURE, STRUCTURE_SCH1, STRUCTURE_SCH2 -> price = 6_000;
+            case RANG_SCH1, RANG_SCH2 -> price = 8_000;
+        }
+        return price;
     }
 }
