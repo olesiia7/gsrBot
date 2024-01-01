@@ -19,11 +19,20 @@ import static bot.gsr.model.Category.*;
 import static bot.gsr.model.SessionType.*;
 
 
-public class Utils {
-    public static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
+public final class Utils {
+    public static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель",
+            "Май", "Июнь", "Июль", "Август",
+            "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
+    public static final List<String> SHORT_MONTH_NAMES = Arrays.asList("Янв", "Фев", "Март", "Апр",
+            "Май", "Июнь", "Июль", "Авг",
+            "Сент", "Окт", "Ноя", "Дек");
+    public static final String BACK_TEXT = "Назад";
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DecimalFormat PRICE_FORMAT = new DecimalFormat("###,###");
+
+    private Utils() {
+    }
 
     /**
      * @param inputDate dd.MM.yyyy
@@ -41,6 +50,18 @@ public class Utils {
     public static String getDate(@NotNull Date date) {
         LocalDate localDate = date.toLocalDate();
         return localDate.format(DATE_FORMATTER);
+    }
+
+    /**
+     * @param date YYYY-dd
+     * @return дата вида Сентябрь 2023
+     */
+    public static String getDate(String date) {
+        String[] split = date.split("-");
+        String year = split[0];
+        int monthId = Integer.parseInt(split[1]);
+        String month = getMonth(monthId);
+        return month + " " + year;
     }
 
     /**
@@ -65,31 +86,31 @@ public class Utils {
     }
 
     /**
-     * @param month месяц
-     * @return номер месяца - 1, Январь = 0
+     * @param monthNumber номер месяца (январь = 1)
+     * @return название месяца
      */
-    public static int getMonthNumber(String month) {
-        return MONTH_NAMES.indexOf(month);
+    public static String getMonth(int monthNumber) {
+        return MONTH_NAMES.get(monthNumber - 1);
     }
 
     /**
-     * @param monthNumber номер месяца - 1 (январь = 0)
-     * @return название
+     * @param monthNumber номер месяца (январь = 1)
+     * @return короткое название месяца
      */
-    public static String getMonth(int monthNumber) {
-        return MONTH_NAMES.get(monthNumber);
+    public static String getShortMonth(int monthNumber) {
+        return SHORT_MONTH_NAMES.get(monthNumber - 1);
     }
 
     /**
      * @param day   день
-     * @param month месяц - 1 (январь = 0)
+     * @param month месяц (январь = 1)
      * @param year  год
      * @return дату
      */
     public static Date getDate(int day, int month, int year) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
-        calendar.set(Calendar.MONTH, month);
+        calendar.set(Calendar.MONTH, month - 1);
         calendar.set(Calendar.DAY_OF_MONTH, day);
         return new Date(calendar.getTime().getTime());
     }

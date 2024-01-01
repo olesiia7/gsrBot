@@ -18,7 +18,7 @@ class TelegraphControllerTest {
     private TelegraphController controller;
 
     @Test
-    public void getPageListTest() {
+    void getPageListTest() {
         PageList pageList = controller.getPageList(4);
         Assertions.assertNotNull(pageList);
         List<Page> pages = pageList.getPages();

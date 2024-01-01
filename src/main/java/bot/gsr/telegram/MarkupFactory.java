@@ -1,44 +1,27 @@
 package bot.gsr.telegram;
 
 import bot.gsr.model.Category;
-import bot.gsr.model.SessionType;
-import bot.gsr.telegram.model.Decision;
-import bot.gsr.telegram.model.ReportType;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.lang.Nullable;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static bot.gsr.utils.Utils.MONTH_NAMES;
+import static bot.gsr.telegram.TelegramUtils.CALLBACK_DELIMITER;
+import static bot.gsr.utils.Utils.BACK_TEXT;
 
-//ToDo: провести рефакторинг: вынести из класса готовые MARKUP
 public final class MarkupFactory {
-    private static final String APPROVE_BUTTON_TEXT = "✅ Одобрить";
-    private static final String DECLINE_BUTTON_TEXT = "❌ Пропустить";
-    private static final String EDIT_BUTTON_TEXT = "✏️ Изменить";
-
-    public static final InlineKeyboardMarkup VERIFYING_MARKUP = getVerifyingMarkup();
-
-    public static final String EDIT_CATEGORY = "Категория";
-    public static final String EDIT_SESSION_TYPE = "Тип сессии";
-    public static final String EDIT_SESSION_PRICE = "Цена";
-    public static final String EDIT_FINISHED = "Назад";
-
-    public static final ReplyKeyboardMarkup EDITING_MARKUP = getReplyMarkup(EDIT_SESSION_PRICE, EDIT_CATEGORY, EDIT_SESSION_TYPE, EDIT_FINISHED);
-    public static final ReplyKeyboardMarkup BACK_MARKUP = getReplyMarkup(EDIT_FINISHED);
-
-    public static final ReplyKeyboardMarkup EDIT_CATEGORY_MARKUP = getEditCategoryMarkup();
-    public static final ReplyKeyboardMarkup EDIT_SESSION_TYPE_MARKUP = getEditSessionTypeMarkup();
-    public static final ReplyKeyboardMarkup MONTHS_MARKUP = getMonthsMarkup();
-    public static final ReplyKeyboardMarkup REPORT_TYPE_MARKUP = getReportType();
-
     public static final ReplyKeyboardRemove REMOVE_MARKUP = removeMarkup();
+
+    private MarkupFactory() {
+    }
 
     private static ReplyKeyboardRemove removeMarkup() {
         ReplyKeyboardRemove remove = new ReplyKeyboardRemove();
@@ -46,69 +29,50 @@ public final class MarkupFactory {
         return remove;
     }
 
-    private static ReplyKeyboardMarkup getEditCategoryMarkup() {
-        List<String> buttons = Arrays.stream(Category.values())
-                .map(Category::getName)
-                .collect(Collectors.toList());
-        buttons.add(EDIT_FINISHED);
-        return getReplyMarkup(buttons.toArray(new String[0]));
+    public static InlineKeyboardMarkup getInlineMarkup(@NotNull List<Pair<String, String>> buttonsWithCallback) {
+        return getInlineMarkup(buttonsWithCallback, 1);
     }
 
-    private static ReplyKeyboardMarkup getEditSessionTypeMarkup() {
-        List<String> buttons = Arrays.stream(SessionType.values())
-                .map(SessionType::getName)
-                .collect(Collectors.toList());
-        buttons.add(EDIT_FINISHED);
-        return getReplyMarkup(buttons.toArray(new String[0]));
-    }
-
-    private static ReplyKeyboardMarkup getMonthsMarkup() {
-        return getReplyMarkup(MONTH_NAMES.toArray(new String[0]));
-    }
-
-    private static ReplyKeyboardMarkup getReportType() {
-        return getReplyMarkup(Arrays.stream(ReportType.values())
-                .map(ReportType::getName)
-                .toArray(String[]::new));
-    }
-
-    public static ReplyKeyboardMarkup getReplyMarkup(String... buttons) {
-        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
-        markup.setResizeKeyboard(true);
-        markup.setOneTimeKeyboard(true);
-        List<KeyboardRow> keyboardRows = new ArrayList<>();
-        for (String button : buttons) {
-            KeyboardRow row = new KeyboardRow();
-            row.add(button);
-            keyboardRows.add(row);
-        }
-        markup.setKeyboard(keyboardRows);
-        return markup;
-    }
-
-    private static InlineKeyboardMarkup getVerifyingMarkup() {
+    /**
+     * @param buttonsWithCallback список из названий кнопки и callback
+     * @return {@link InlineKeyboardMarkup} c кнопками по одной в строке
+     */
+    public static InlineKeyboardMarkup getInlineMarkup(@NotNull List<Pair<String, String>> buttonsWithCallback, int buttonsPerRow) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
-        List<InlineKeyboardButton> row1btns = new ArrayList<>();
-        InlineKeyboardButton approveBtn = new InlineKeyboardButton();
-        approveBtn.setText(APPROVE_BUTTON_TEXT);
-        approveBtn.setCallbackData(Decision.APPROVE.toString());
-        row1btns.add(approveBtn);
 
-        InlineKeyboardButton declineBtn = new InlineKeyboardButton();
-        declineBtn.setText(DECLINE_BUTTON_TEXT);
-        declineBtn.setCallbackData(Decision.DECLINE.toString());
+        List<List<InlineKeyboardButton>> buttons = buttonsWithCallback.stream()
+                .collect(Collectors.groupingBy(e -> buttonsWithCallback.indexOf(e) / buttonsPerRow))
+                .values().stream()
+                .map(sublist -> sublist.stream()
+                        .map(pair -> {
+                            InlineKeyboardButton button = new InlineKeyboardButton();
+                            button.setText(pair.getKey());
+                            button.setCallbackData(pair.getValue());
+                            return button;
+                        })
+                        .toList())
+                .toList();
 
-        row1btns.add(declineBtn);
-
-        InlineKeyboardButton editBtn = new InlineKeyboardButton();
-        editBtn.setText(EDIT_BUTTON_TEXT);
-        editBtn.setCallbackData(Decision.EDIT.toString());
-        row1btns.add(editBtn);
-
-        buttons.add(row1btns);
         markup.setKeyboard(buttons);
         return markup;
     }
 
+    public static InlineKeyboardMarkup getBackMarkup(@NotNull String callback) {
+        List<Pair<String, String>> buttons = new ArrayList<>();
+        buttons.add(Pair.of(BACK_TEXT, callback + CALLBACK_DELIMITER + BACK_TEXT));
+        return getInlineMarkup(buttons);
+    }
+
+    public static InlineKeyboardMarkup createChooseCategoryMarkup(@NotNull UnaryOperator<String> getCallbackFunction,
+                                                                  @Nullable String callback,
+                                                                  @NotNull List<Category> excludeCategory) {
+        List<Pair<String, String>> buttons = new ArrayList<>();
+        Arrays.stream(Category.values())
+                .filter(category -> !excludeCategory.contains(category))
+                .forEach(category -> buttons.add(Pair.of(category.getName(), getCallbackFunction.apply(category.name()))));
+        if (callback != null) {
+            buttons.add(Pair.of(BACK_TEXT, callback + CALLBACK_DELIMITER + BACK_TEXT));
+        }
+        return getInlineMarkup(buttons);
+    }
 }

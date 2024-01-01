@@ -2,6 +2,8 @@ package bot.gsr.telegram.commands;
 
 import bot.gsr.events.GetBackupEvent;
 import bot.gsr.handlers.EventManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
@@ -17,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 @Component
 public class GetBackupCommand extends BotCommand {
+    private static final Logger logger = LoggerFactory.getLogger(GetBackupCommand.class);
     private final EventManager eventManager;
 
     public GetBackupCommand(EventManager eventManager) {
@@ -39,7 +42,7 @@ public class GetBackupCommand extends BotCommand {
             absSender.execute(sendDocument);
 
         } catch (TelegramApiException | ExecutionException | InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Ошибка при при отправке бэкапа: {}", e.getMessage());
         }
     }
 }

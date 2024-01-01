@@ -6,12 +6,15 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Component
 public class WebManager {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final HttpClient CLIENT = HttpClients.createDefault();
 
     public String processGetRequest(String url) {
@@ -24,10 +27,10 @@ public class WebManager {
                 HttpEntity entity = response.getEntity();
                 return EntityUtils.toString(entity);
             }
-            System.out.printf("error while processing %s: code %s", url, statusCode);
+            logger.error("error while processing {}: code {}", url, statusCode);
             return null;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Ошибка при выполнении GET запроса: {}", e.getMessage());
         }
         return null;
     }

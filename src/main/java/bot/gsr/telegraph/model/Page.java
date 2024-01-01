@@ -1,6 +1,8 @@
 package bot.gsr.telegraph.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -9,6 +11,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Page implements TelegraphObject {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private static final String URL_FIELD = "url";
     private static final String TITLE_FIELD = "title";
 
@@ -55,7 +59,7 @@ public class Page implements TelegraphObject {
             created = Date.valueOf(localDate);
         }
         if (created == null) {
-            System.out.printf("Error while getting date from url %s\n", url);
+            logger.error("Error while getting date from url {}", url);
         }
     }
 

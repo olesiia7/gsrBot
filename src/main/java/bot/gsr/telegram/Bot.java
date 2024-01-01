@@ -1,84 +1,74 @@
 package bot.gsr.telegram;
 
-import bot.gsr.telegram.commands.AddLogCommand;
-import bot.gsr.telegram.commands.CheckNewLogsCommand;
-import bot.gsr.telegram.commands.GetBackupCommand;
-import bot.gsr.telegram.commands.QueryCommand;
+import bot.gsr.telegram.commands.UpdateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static bot.gsr.telegram.TelegramUtils.addDecisionToMsg;
-import static bot.gsr.telegram.TelegramUtils.cleanText;
-
+@Component
 public final class Bot extends TelegramLongPollingCommandBot {
-    private final Logger logger = LoggerFactory.getLogger(Bot.class);
-    private final String botName;
-    private AnswerListener listener;
+    private static final Logger logger = LoggerFactory.getLogger(Bot.class);
 
-    public Bot(String botToken, String botName,
-               QueryCommand queryCommand,
-               AddLogCommand addLogCommand,
-               CheckNewLogsCommand checkNewLogsCommand,
-               GetBackupCommand getBackupCommand) {
+    private final String botName;
+    private final List<UpdateHandler> updateHandlers;
+    private final Map<Long, String> lastCallbacks = new HashMap<>();
+
+    public Bot(@Value("${telegram.bot.token}") String botToken,
+               @Value("${telegram.bot.name}") String botName,
+               List<BotCommand> commands,
+               List<UpdateHandler> updateHandlers) {
         super(botToken);
         this.botName = botName;
+        this.updateHandlers = updateHandlers;
 
-        addLogCommand.setListener(this);
-        register(queryCommand);
-        register(addLogCommand);
-        register(checkNewLogsCommand);
-        register(getBackupCommand);
-    }
-
-    public void setListener(AnswerListener listener) {
-        this.listener = listener;
+        commands.forEach(this::register);
     }
 
     @Override
     public void processNonCommandUpdate(Update update) {
+        Long chatId;
         if (update.hasCallbackQuery()) {
-            String json = update.getCallbackQuery().getData();
-            try {
-                listener.processAnswer(json);
-                handleButtonClick(update.getCallbackQuery());
-            } catch (TelegramApiException | SQLException e) {
-                logger.error(e.getMessage());
+            chatId = update.getCallbackQuery().getMessage().getChatId();
+            List<UpdateHandler> foundCommandHandlers = updateHandlers.stream()
+                    .filter(commandHandler -> commandHandler.canProcessUpdate(update.getCallbackQuery().getData()))
+                    .toList();
+
+            if (foundCommandHandlers.size() != 1) {
+                logger.error("Не удалось правильно определить commandHandler. Список подходящих: {}", foundCommandHandlers.stream()
+                        .map(UpdateHandler::getCallbackName)
+                        .collect(Collectors.joining(", ")));
+                return;
             }
-            return;
+
+            lastCallbacks.put(chatId, update.getCallbackQuery().getData());
+            foundCommandHandlers.get(0).processCallback(update, this);
         }
+
         if (update.hasMessage()) {
-            String text = update.getMessage().getText();
-            try {
-                listener.processAnswer(text);
-            } catch (NullPointerException | TelegramApiException | SQLException e) {
-                logger.error(e.getMessage());
+            chatId = update.getMessage().getChatId();
+            String lastCallback = lastCallbacks.get(chatId);
+
+            List<UpdateHandler> foundCommandHandlers = updateHandlers.stream()
+                    .filter(commandHandler -> commandHandler.canProcessUpdate(lastCallback))
+                    .toList();
+
+            if (foundCommandHandlers.size() != 1) {
+                logger.error("Не удалось правильно определить commandHandler. Список подходящих: {}", foundCommandHandlers.stream()
+                        .map(UpdateHandler::getCallbackName)
+                        .collect(Collectors.joining(", ")));
+                return;
             }
-        }
-    }
 
-    private void handleButtonClick(CallbackQuery callbackQuery) {
-        EditMessageText editMessageText = new EditMessageText();
-        editMessageText.setChatId(callbackQuery.getMessage().getChatId());
-        editMessageText.setMessageId(callbackQuery.getMessage().getMessageId());
-        String text = callbackQuery.getMessage().getText();
-        text = addDecisionToMsg(text, callbackQuery.getData());
-        text = cleanText(text);
-
-        editMessageText.setText(text);
-        editMessageText.setParseMode("MarkdownV2");
-        editMessageText.setReplyMarkup(null);
-
-        try {
-            execute(editMessageText);
-        } catch (TelegramApiException e) {
-            logger.error(e.getMessage());
+            foundCommandHandlers.get(0).processAction(lastCallback, update, this);
         }
     }
 

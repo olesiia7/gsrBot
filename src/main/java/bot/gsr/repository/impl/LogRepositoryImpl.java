@@ -73,7 +73,7 @@ public class LogRepositoryImpl implements LogRepository {
             }
             ps.execute();
         } catch (SQLException e) {
-            logger.error(query + "\n" + log.toString() + "\n" + e.getMessage());
+            logger.error("{}\n{}\n{}", query, log, e.getMessage());
         }
     }
 
@@ -186,7 +186,7 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     private void logError(String sql, SQLException e) {
-        logger.error(sql + "\n\t" + e.getMessage());
+        logger.error("{}\n\t{}", sql, e.getMessage());
     }
 
     @Override
@@ -212,11 +212,12 @@ public class LogRepositoryImpl implements LogRepository {
     }
 
     @Override
-    public List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month) {
+    public List<CategorySummary> getCategorySummary(@Nullable Integer year, @Nullable Integer month) {
+        String formattedMonth = String.format("%02d", month);
         String sql = "SELECT " + C_CATEGORY + ", COUNT(*) AS count, SUM(" + C_PRICE + ") AS total_price " +
                 "FROM logs\n" +
                 "WHERE (" + year + " IS NULL OR EXTRACT(YEAR FROM " + C_DATE + ") = " + year + ")\n" +
-                "AND (" + month + " IS NULL OR EXTRACT(MONTH FROM " + C_DATE + ") = " + month + ")\n" +
+                "AND (" + month + " IS NULL OR EXTRACT(MONTH FROM " + C_DATE + ") = " + formattedMonth + ")\n" +
                 "GROUP BY " + C_CATEGORY;
         Function<ResultSet, List<CategorySummary>> rsProcessor = resultSet -> {
             List<CategorySummary> result = new ArrayList<>();

@@ -5,6 +5,8 @@ import bot.gsr.model.Log;
 import bot.gsr.model.LogFilter;
 import bot.gsr.service.LogService;
 import bot.gsr.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,8 @@ import java.util.List;
  */
 @Component
 public class ConvertDbToCSVHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ConvertDbToCSVHandler.class);
+
     private final LogService logService;
 
     public ConvertDbToCSVHandler(LogService logService) {
@@ -39,6 +43,6 @@ public class ConvertDbToCSVHandler {
 
             csvWriter.flush();
         }
-        System.out.printf("%d логов успешно экспортированы в CSV: %s\n", logs.size(), event.pathForResult());
+        logger.info("{} логов успешно экспортированы в CSV: {}", logs.size(), event.pathForResult());
     }
 }

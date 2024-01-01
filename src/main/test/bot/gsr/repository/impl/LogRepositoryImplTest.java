@@ -339,14 +339,14 @@ class LogRepositoryImplTest {
         assertTrue(actual.containsAll(expected));
 
         // с годом
-        actual = logRepository.getCategorySummary("2022", null);
+        actual = logRepository.getCategorySummary(2022, null);
         CategorySummary in2022 = new CategorySummary(SESSION, 1, 2600);
 
         assertEquals(1, actual.size());
         assertEquals(in2022, actual.get(0));
 
         // с месяцем
-        actual = logRepository.getCategorySummary(null, "10");
+        actual = logRepository.getCategorySummary(null, 10);
 
         expected.clear();
         expected.add(in2022);
@@ -357,7 +357,7 @@ class LogRepositoryImplTest {
         assertTrue(actual.containsAll(expected));
 
         // год и месяц
-        actual = logRepository.getCategorySummary("2023", "10");
+        actual = logRepository.getCategorySummary(2023, 10);
 
         expected.clear();
         expected.add(diagnostic);
@@ -367,7 +367,7 @@ class LogRepositoryImplTest {
         assertTrue(actual.containsAll(expected));
 
         // не существует
-        actual = logRepository.getCategorySummary("2022", "11");
+        actual = logRepository.getCategorySummary(2022, 11);
         assertEquals(0, actual.size());
     }
 

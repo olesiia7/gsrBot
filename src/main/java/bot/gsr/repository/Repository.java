@@ -44,24 +44,24 @@ public interface Repository {
 
     InputStream getDump();
 
-    default <T> T executeQuery(@NotNull String SQL,
+    default <T> T executeQuery(@NotNull String sql,
                                @NotNull Function<ResultSet, T> resultSetProcessor) {
         try (Connection con = dataSource().getConnection()) {
             Statement statement = con.createStatement();
-            ResultSet resultSet = statement.executeQuery(SQL);
+            ResultSet resultSet = statement.executeQuery(sql);
             return resultSetProcessor.apply(resultSet);
         } catch (SQLException e) {
-            logError(SQL, e);
+            logError(sql, e);
         }
         return null;
     }
 
-    default void execute(@NotNull String SQL) {
+    default void execute(@NotNull String sql) {
         try (Connection con = dataSource().getConnection()) {
             Statement statement = con.createStatement();
-            statement.execute(SQL);
+            statement.execute(sql);
         } catch (SQLException e) {
-            logError(SQL, e);
+            logError(sql, e);
         }
     }
 
@@ -80,7 +80,7 @@ public interface Repository {
     }
 
     //ToDo: убрать костыль: сейчас парсится строчка лога только LogRepositoryImpl. Мб через лог вычислять?
-    private static void logError(@NotNull String SQL, @NotNull SQLException e) {
+    private static void logError(@NotNull String sql, @NotNull SQLException e) {
         Optional<String> calledMethod = Arrays.stream(e.getStackTrace())
                 .filter(stack -> stack.getClassName().equals(LogRepositoryImpl.class.getName()))
                 .map(stack -> {
@@ -89,6 +89,6 @@ public interface Repository {
                     return "метод вызван из .(" + simpleName + ".java:" + stack.getLineNumber() + ")";
                 })
                 .findFirst();
-        logger.error(SQL + "\n\t" + e.getMessage() + (calledMethod.map(s -> "\n" + s).orElse("")));
+        logger.error("{}\n\t{}{}", sql, e.getMessage(), (calledMethod.map(s -> "\n" + s).orElse("")));
     }
 }

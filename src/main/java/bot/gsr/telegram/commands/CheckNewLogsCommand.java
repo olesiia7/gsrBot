@@ -1,85 +1,80 @@
 package bot.gsr.telegram.commands;
 
-import bot.gsr.events.GetLastSessionOrDiagnosticEvent;
-import bot.gsr.events.GetNewTelegraphPagesEvent;
-import bot.gsr.events.VerifyAndPublishLogEvent;
-import bot.gsr.handlers.EventManager;
+import bot.gsr.service.LogService;
 import bot.gsr.telegram.model.LogWithUrl;
+import bot.gsr.telegram.service.VerifyLogService;
+import bot.gsr.telegraph.TelegraphController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.bots.AbsSender;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static bot.gsr.telegram.MarkupFactory.REMOVE_MARKUP;
+import static bot.gsr.telegram.TelegramUtils.sendMessage;
 
 /**
- * Проверяет новые статьи в telegraph и публикует их
+ * Проверяет новые статьи в telegraph
  */
 @Component
 public class CheckNewLogsCommand extends BotCommand {
-    private final EventManager eventManager;
+    private static final Logger logger = LoggerFactory.getLogger(CheckNewLogsCommand.class);
+    private final LogService logService;
+    private final TelegraphController telegraphController;
+    private final VerifyLogService verifyLogService;
 
-    public CheckNewLogsCommand(EventManager eventManager) {
+    private final List<LogWithUrl> pages = new ArrayList<>();
+
+    public CheckNewLogsCommand(LogService logService,
+                               TelegraphController telegraphController,
+                               VerifyLogService verifyLogService) {
         super("check_new", "Проверить новые записи");
-        this.eventManager = eventManager;
+        this.logService = logService;
+        this.telegraphController = telegraphController;
+        this.verifyLogService = verifyLogService;
     }
 
     @Override
     public void execute(AbsSender absSender, User user, Chat chat, String[] strings) {
-        try {
-            SendMessage message = new SendMessage();
-            message.setChatId(chat.getId());
-            message.setText("\uD83D\uDD0D Проверяю новые записи telegraph");
-            message.setReplyMarkup(REMOVE_MARKUP);
-            message.enableMarkdown(true);
-            absSender.execute(message);
+        String text = "\uD83D\uDD0D Проверяю новые записи telegraph";
+        String chatId = chat.getId().toString();
+        sendMessage(text, REMOVE_MARKUP, true, chatId, absSender);
 
-            // получаем последние записанные сессии
-            CompletableFuture<List<String>> lastSessionOrDiagnosticResult = new CompletableFuture<>();
-            GetLastSessionOrDiagnosticEvent event = new GetLastSessionOrDiagnosticEvent(lastSessionOrDiagnosticResult);
-            eventManager.handleEvent(event);
-            List<String> lastSessionOrDiagnostic = lastSessionOrDiagnosticResult.get();
+        // получаем последние записанные сессии
+        List<String> lastPageNames = logService.getLastPageNames();
 
-            // получаем новые статьи
-            CompletableFuture<List<LogWithUrl>> newPagesResult = new CompletableFuture<>();
-            eventManager.handleEvent(new GetNewTelegraphPagesEvent(lastSessionOrDiagnostic, newPagesResult));
-            List<LogWithUrl> newPages = newPagesResult.get();
-            message = new SendMessage();
-            message.setChatId(chat.getId());
-            message.setText("Новых статей: " + newPages.size());
-            absSender.execute(message);
+        // получаем новые статьи
+        pages.clear();
+        pages.addAll(telegraphController.getNewLogs(lastPageNames));
 
-            if (newPages.isEmpty()) {
+        text = "Новых статей: " + pages.size();
+        sendMessage(text, null, false, chatId, absSender);
+
+        verifyNext(chatId, absSender);
+    }
+
+    private void verifyNext(@NotNull String chatId, @NotNull AbsSender absSender) {
+        if (pages.isEmpty()) {
+            return;
+        }
+
+        LogWithUrl logWithUrl = pages.get(0);
+
+        CompletableFuture<Void> verify = verifyLogService.verify(logWithUrl, chatId, absSender);
+        verify.whenComplete((unused, throwable) -> {
+            if (throwable != null) {
+                logger.error("Ошибка при verify: {}", throwable.toString());
                 return;
             }
-
-            // Пул потоков для цикла
-            ExecutorService loopExecutor = Executors.newSingleThreadExecutor();
-
-            // Запускаем цикл в отдельном потоке
-            CompletableFuture.runAsync(() -> {
-                for (LogWithUrl logWithUrl : newPages) {
-                    CompletableFuture<Void> promise = new CompletableFuture<>();
-                    eventManager.handleEvent(new VerifyAndPublishLogEvent(logWithUrl, promise));
-
-                    try {
-                        promise.get(); // чтобы не посылать новые запросы, пока не принято решение по текущему
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, loopExecutor);
-        } catch (TelegramApiException | ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
+            pages.remove(0);
+            verifyNext(chatId, absSender);
+        });
     }
 }

@@ -31,7 +31,7 @@ public enum SessionType {
                 return sessionType;
             }
         }
-        logger.error("Нет такого типа сессии: " + name);
+        logger.error("Нет такого типа сессии: {}", name);
         throw new IllegalArgumentException("No enum constant with name: " + name);
     }
 }

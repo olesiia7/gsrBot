@@ -1,22 +1,82 @@
 package bot.gsr.telegram;
 
-import bot.gsr.telegram.model.Decision;
-import bot.gsr.telegram.model.LogWithUrl;
 import bot.gsr.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.bots.AbsSender;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import javax.validation.constraints.NotNull;
 import java.sql.Date;
 
 public final class TelegramUtils {
+    public static final String CALLBACK_DELIMITER = "#";
+    private static final Logger logger = LoggerFactory.getLogger(TelegramUtils.class);
 
-    public static String addDecisionToMsg(String msg, String callQueryJson) {
-        Decision decision = Decision.valueOf(callQueryJson);
-        msg += "\n\n";
-        switch (decision) {
-            case APPROVE -> msg += "✅ Одобрено";
-            case DECLINE -> msg += "❌ Пропущено";
-            case EDIT -> msg += "✏️ Изменено";
+    private TelegramUtils() {
+    }
+
+    public static Message sendMessage(@NotNull String message,
+                                      @Nullable ReplyKeyboard keyboard,
+                                      boolean formatted,
+                                      @NotNull String chatId,
+                                      @NotNull AbsSender absSender) {
+        SendMessage sendMessage = new SendMessage(chatId, message);
+        if (formatted) {
+            sendMessage.setParseMode("MarkdownV2");
         }
-        return msg;
+        if (keyboard != null) {
+            sendMessage.setReplyMarkup(keyboard);
+        }
+        try {
+            return absSender.execute(sendMessage);
+        } catch (TelegramApiException e) {
+            logger.error("Ошибка при попытке отправить сообщение: {}", message);
+            logger.error(e.getMessage());
+            return null;
+        }
+    }
+
+    public static void editMessage(@NotNull String chatId,
+                                   @NotNull Integer messageId,
+                                   @NotNull String text,
+                                   @Nullable InlineKeyboardMarkup markup,
+                                   boolean setMarkdown,
+                                   @NotNull AbsSender absSender) {
+        try {
+            EditMessageText editMessageText = new EditMessageText();
+            editMessageText.setChatId(chatId);
+            editMessageText.setMessageId(messageId);
+            editMessageText.setText(text);
+            if (setMarkdown) {
+                editMessageText.setParseMode("MarkdownV2");
+            }
+            editMessageText.setReplyMarkup(markup);
+
+            absSender.execute(editMessageText);
+        } catch (TelegramApiException e) {
+            logger.error("Ошибка при попытке изменить сообщение на: {}", text);
+            logger.error(e.getMessage());
+        }
+    }
+
+    public static void deleteMessage(@NotNull String chatId,
+                                     @NotNull Integer messageId,
+                                     @NotNull AbsSender absSender) {
+        DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
+        try {
+            absSender.execute(deleteMessage);
+        } catch (TelegramApiException e) {
+            logger.error("Ошибка при попытке удалить сообщение, id: {}", deleteMessage.getMessageId());
+            logger.error(e.getMessage());
+        }
     }
 
     /**
@@ -32,25 +92,6 @@ public final class TelegramUtils {
         text = text.replace("+", "\\+");
         text = text.replace("|", "\\|");
         return text;
-    }
-
-    //  Сессия: Адекватизация др. Актуальное
-//      23.02.2023, Сессия по Судьбе Рода
-//      2 600 ₽
-//      https://telegra.ph/Aktualnoe-dr-07-10
-    public static String getVerifyingMsg(LogWithUrl log) {
-        String msg = log.log().category().getName() + ": *" + log.log().description() + "*\n" +
-                "_" + Utils.getDate(log.log().date());
-        if (log.log().sessionType() != null) {
-            msg += ", " + log.log().sessionType().getName();
-        }
-        msg += "_\n" +
-                Utils.formatPrice(log.log().price());
-        if (log.url() != null && !log.url().isEmpty()) {
-            msg += "\n" + log.url();
-        }
-        msg = cleanText(msg);
-        return msg;
     }
 
     public static String formatPageMessage(String title, Date created, String url) {

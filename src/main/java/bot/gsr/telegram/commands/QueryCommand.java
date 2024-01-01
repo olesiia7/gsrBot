@@ -1,179 +1,323 @@
 package bot.gsr.telegram.commands;
 
 
-import bot.gsr.events.GetMonthlyReportEvent;
-import bot.gsr.events.SendMeTelegramMessageEvent;
-import bot.gsr.handlers.EventManager;
-import bot.gsr.model.*;
 import bot.gsr.service.LogService;
-import bot.gsr.telegram.AnswerListener;
-import bot.gsr.telegram.MarkupFactory;
+import bot.gsr.telegram.ReportUtils;
 import bot.gsr.telegram.model.ReportType;
 import bot.gsr.telegram.model.YearMonth;
 import bot.gsr.utils.Utils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.Chat;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 
-import java.util.List;
+import javax.validation.constraints.NotNull;
+import java.util.*;
 
-import static bot.gsr.telegram.MarkupFactory.REMOVE_MARKUP;
-import static bot.gsr.telegram.MarkupFactory.REPORT_TYPE_MARKUP;
+import static bot.gsr.telegram.MarkupFactory.getInlineMarkup;
+import static bot.gsr.telegram.TelegramUtils.*;
+import static bot.gsr.utils.Utils.BACK_TEXT;
+import static bot.gsr.utils.Utils.getShortMonth;
 
 @Component
-public class QueryCommand extends BotCommand {
-    private final EventManager manager;
+public class QueryCommand extends BotCommand implements UpdateHandler {
+    private static final Logger logger = LoggerFactory.getLogger(QueryCommand.class);
+
+    private static final Set<Integer> msgsToDelete = new HashSet<>();
+    private static final String CHOOSE_PERIOD_TEXT = "Выберите период или введите нужное кол-во месяцев, \nгде 0 - текущий месяц, 1 – текущий + предыдущий и т.д.";
+    private final InlineKeyboardMarkup reportTypeMarkup = getReportType();
+    private final InlineKeyboardMarkup periodMarkup = getPeriodMarkup();
+    private final InlineKeyboardMarkup formMarkup = getFormMarkup();
     private final LogService logService;
 
-    public QueryCommand(EventManager manager, LogService logService) {
+    private Stage stage;
+    private Integer firstMsg;
+
+    // для MONTHLY
+    private int monthlyYear;
+    private List<YearMonth> cachedAllPeriods;
+
+    // для MONEY_BY_MONTH
+    private int moneyByMonthMonth;
+
+    public QueryCommand(LogService logService) {
         super("query", "Посмотреть записи");
-        this.manager = manager;
         this.logService = logService;
     }
 
     @Override
     public void execute(AbsSender absSender, User user, Chat chat, String[] strings) {
-        String text = "Выберите тип отчета";
-        AnswerListener listener = answer -> {
-            ReportType reportType = ReportType.findByName((String) answer);
-            switch (reportType) {
-                case LAST_ALL -> sendLastAllReport();
-                case MONTHLY -> sendMonthlyReport();
-                case MONEY_BY_MONTH -> sendMoneyByMonthReport();
-                case MONEY_BY_CATEGORY -> sendMoneyByCategoryReport();
+        firstMsg = null;
+        stage = Stage.GET_TYPE;
+        processGetters(chat.getId().toString(), null, absSender);
+    }
+
+    private void processGetters(@NotNull String chatId, @Nullable Integer callbackMsgId, @NotNull AbsSender absSender) {
+        switch (stage) {
+            case GET_TYPE -> {
+                clearMsgToDelete(chatId, absSender);
+                String text = "Выберите тип отчета";
+                if (firstMsg == null) { // первый раз
+                    Message message = sendMessage(text, reportTypeMarkup, false, chatId, absSender);
+                    firstMsg = message.getMessageId();
+                } else {
+                    editMessage(chatId, callbackMsgId, text, reportTypeMarkup, false, absSender);
+                }
+                stage = Stage.SET_TYPE;
+            }
+            case GET_MONTHLY_YEAR -> {
+                String text = "Выберите год, затем месяц:";
+                // получаем список всех месяцев в gsr
+                cachedAllPeriods = logService.getAllPeriods();
+
+                List<Pair<String, String>> buttons = new ArrayList<>();
+                cachedAllPeriods.stream() // уникальные годы
+                        .map(YearMonth::year)
+                        .distinct()
+                        .sorted(Comparator.reverseOrder())
+                        .forEach(year -> buttons.add(Pair.of(year.toString(), getCallback(year.toString()))));
+                buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
+
+                InlineKeyboardMarkup chooseYearMarkup = getInlineMarkup(buttons, 2);
+                stage = Stage.SET_MONTHLY_YEAR;
+                editMessage(chatId, callbackMsgId, text, chooseYearMarkup, true, absSender);
+            }
+            case GET_MONTHLY_MONTH -> {
+                String text = "*Год*: " + monthlyYear + "\nВыберите месяц:";
+                List<Pair<String, String>> buttons = new ArrayList<>();
+                cachedAllPeriods.stream()
+                        .filter(yearMonth -> yearMonth.year() == monthlyYear)
+                        .map(YearMonth::month)
+                        .sorted()
+                        .forEach(month -> buttons.add(Pair.of(getShortMonth(month), getCallback(month.toString()))));
+                buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
+
+                InlineKeyboardMarkup chooseYearMarkup = getInlineMarkup(buttons, 4);
+                stage = Stage.SET_MONTHLY_MONTH;
+                editMessage(chatId, callbackMsgId, text, chooseYearMarkup, true, absSender);
+            }
+            case GET_MONEY_BY_MONTH_PERIOD -> {
+                stage = Stage.SET_MONEY_BY_MONTH_PERIOD;
+                editMessage(chatId, callbackMsgId, CHOOSE_PERIOD_TEXT, periodMarkup, false, absSender);
+            }
+            case GET_MONEY_BY_MONTH_FORM -> {
+                String text = cleanText("""
+                        *Период*: %s
+                        Выберите форму отчёта:
+                        Краткая – только общая сумма за месяц
+                        Подробная – общая сумма за месяц + траты по категориям"""
+                        .replace("%s", ReportUtils.declineMonth(moneyByMonthMonth)));
+
+                stage = Stage.SET_MONEY_BY_MONTH_FORM;
+                editMessage(chatId, callbackMsgId, text, formMarkup, true, absSender);
+                clearMsgToDelete(chatId, absSender);
+            }
+            default -> logger.error("{} не может быть обработана в processGetters", stage);
+        }
+    }
+
+    @Override
+    public void processCallback(Update update, AbsSender absSender) {
+        String callback = getSecondCallback(update.getCallbackQuery().getData());
+        String chatId = update.getCallbackQuery().getMessage().getChatId().toString();
+        Integer callbackMsgId = update.getCallbackQuery().getMessage().getMessageId();
+
+        if (callback.equals(Utils.BACK_TEXT)) {
+            setPrevStage();
+            if (stage == Stage.CANCELED) {
+                msgsToDelete.add(callbackMsgId);
+                clearMsgToDelete(chatId, absSender);
+                return;
+            }
+            processGetters(chatId, callbackMsgId, absSender);
+            return;
+        }
+
+        switch (stage) {
+            case SET_TYPE -> {
+                ReportType reportType = ReportType.valueOf(callback);
+                switch (reportType) {
+                    case LAST_ALL -> {
+                        String text = ReportUtils.getLastAllReport(logService);
+                        firstMsg = null;
+                        editMessage(chatId, callbackMsgId, text, null, true, absSender);
+                    }
+                    case MONTHLY -> {
+                        stage = Stage.GET_MONTHLY_YEAR;
+                        processGetters(chatId, callbackMsgId, absSender);
+                    }
+                    case MONEY_BY_MONTH -> {
+                        stage = Stage.GET_MONEY_BY_MONTH_PERIOD;
+                        processGetters(chatId, callbackMsgId, absSender);
+                    }
+                    case MONEY_BY_CATEGORY -> {
+                        String text = ReportUtils.getMoneyByCategoryReport(logService);
+                        firstMsg = null;
+                        editMessage(chatId, callbackMsgId, text, null, true, absSender);
+                    }
+                }
+            }
+            case SET_MONTHLY_YEAR -> {
+                monthlyYear = Integer.parseInt(callback);
+                stage = Stage.GET_MONTHLY_MONTH;
+                processGetters(chatId, callbackMsgId, absSender);
+            }
+            case SET_MONTHLY_MONTH -> {
+                int month = Integer.parseInt(callback);
+                String text = ReportUtils.getMonthlyReport(logService, monthlyYear, month);
+                editMessage(chatId, callbackMsgId, text, null, true, absSender);
+            }
+            case SET_MONEY_BY_MONTH_PERIOD -> {
+                moneyByMonthMonth = switch (MoneyByMonthPeriods.valueOf(callback)) {
+                    case CURRENT_MONTH -> 0;
+                    case THREE_MONTHS -> 3;
+                    case SIX_MONTHS -> 6;
+                    case YEAR -> 12;
+                };
+                stage = Stage.GET_MONEY_BY_MONTH_FORM;
+                processGetters(chatId, callbackMsgId, absSender);
+            }
+            case SET_MONEY_BY_MONTH_FORM -> {
+                boolean extended = MoneyByMonthForm.valueOf(callback) == MoneyByMonthForm.EXTENDED;
+                String text = ReportUtils.getMoneyByMonthReport(logService, moneyByMonthMonth, extended);
+                editMessage(chatId, callbackMsgId, text, null, true, absSender);
+            }
+            default -> logger.error("{} не может быть обработана в processCallback", stage);
+        }
+    }
+
+    private InlineKeyboardMarkup getPeriodMarkup() {
+        List<Pair<String, String>> buttons = new ArrayList<>();
+        Arrays.stream(MoneyByMonthPeriods.values())
+                .forEach(period -> buttons.add(Pair.of(period.getName(), getCallback(period.name()))));
+        buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
+        return getInlineMarkup(buttons);
+    }
+
+    private InlineKeyboardMarkup getFormMarkup() {
+        List<Pair<String, String>> buttons = new ArrayList<>();
+        Arrays.stream(MoneyByMonthForm.values())
+                .forEach(form -> buttons.add(Pair.of(form.getName(), getCallback(form.name()))));
+        buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
+        return getInlineMarkup(buttons);
+    }
+
+    @Override
+    public void processAction(String lastCallback, Update update, AbsSender absSender) {
+        if (stage != Stage.SET_MONEY_BY_MONTH_PERIOD) {
+            logger.error("{} не может обрабатываться в processAction", stage);
+            return;
+        }
+        String messageText = update.getMessage().getText();
+        String chatId = update.getMessage().getChatId().toString();
+        Integer messageId = update.getMessage().getMessageId();
+        int months;
+        try {
+            months = Integer.parseInt(messageText);
+        } catch (NumberFormatException ex) {
+            months = -1;
+        }
+        if (months < 0) {
+            String text = "Период, который вы выбрали (%s), не валидный.".replace("%s", messageText) +
+                    "\nПожалуйста, выберите один из вариантов или введите положительное целое число.\n\n"
+                    + CHOOSE_PERIOD_TEXT;
+            editMessage(chatId, firstMsg, text, periodMarkup, false, absSender);
+            deleteMessage(chatId, messageId, absSender);
+            return;
+        }
+        msgsToDelete.add(messageId);
+        moneyByMonthMonth = months;
+        stage = Stage.GET_MONEY_BY_MONTH_FORM;
+        processGetters(chatId, firstMsg, absSender);
+    }
+
+    private InlineKeyboardMarkup getReportType() {
+        List<Pair<String, String>> buttons = new ArrayList<>();
+        Arrays.stream(ReportType.values())
+                .forEach(reportType -> buttons.add(Pair.of(reportType.getName(), getCallback(reportType.name()))));
+        buttons.add(Pair.of(BACK_TEXT, getCallbackName() + CALLBACK_DELIMITER + BACK_TEXT));
+        return getInlineMarkup(buttons);
+    }
+
+    private static void clearMsgToDelete(String chatId, AbsSender absSender) {
+        msgsToDelete.forEach(id -> deleteMessage(chatId, id, absSender));
+        msgsToDelete.clear();
+    }
+
+    @Override
+    public String getCallbackName() {
+        return "QUERY";
+    }
+
+    private enum MoneyByMonthPeriods {
+        CURRENT_MONTH("Текущий месяц"),
+        THREE_MONTHS("3 месяца"),
+        SIX_MONTHS("6 месяцев"),
+        YEAR("Год");
+
+        private final String name;
+
+        MoneyByMonthPeriods(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    private enum MoneyByMonthForm {
+        SHORT("Краткая"), // только общая сумма за месяц
+        EXTENDED("Расширенная"); // траты по категориям + общая сумма за месяц
+
+        private final String name;
+
+        MoneyByMonthForm(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    private enum Stage {
+        GET_TYPE, // тип отчёта
+        SET_TYPE,
+
+        // MONTHLY
+        GET_MONTHLY_YEAR,
+        SET_MONTHLY_YEAR,
+        GET_MONTHLY_MONTH,
+        SET_MONTHLY_MONTH,
+
+        // MONEY_BY_MONTH
+        GET_MONEY_BY_MONTH_PERIOD,
+        SET_MONEY_BY_MONTH_PERIOD,
+        GET_MONEY_BY_MONTH_FORM,
+        SET_MONEY_BY_MONTH_FORM,
+
+        CANCELED
+    }
+
+    private void setPrevStage() {
+        stage = switch (stage) {
+            case SET_TYPE -> Stage.CANCELED;
+            case SET_MONTHLY_MONTH -> Stage.GET_MONTHLY_YEAR;
+            case SET_MONTHLY_YEAR, SET_MONEY_BY_MONTH_PERIOD -> Stage.GET_TYPE;
+            case SET_MONEY_BY_MONTH_FORM -> Stage.GET_MONEY_BY_MONTH_PERIOD;
+            default -> {
+                logger.error("У {} нет предыдущей фазы", stage);
+                throw new IllegalArgumentException(String.format("У %s нет предыдущей фазы", stage));
             }
         };
-        SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(text, REPORT_TYPE_MARKUP, listener, false);
-        manager.handleEvent(event);
-    }
-
-    private void sendLastAllReport() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("*Последняя сессия:*\n");
-        LogFilter.Builder builder = new LogFilter.Builder();
-        builder.setCategory(Category.SESSION);
-        List<Log> lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        sb.append("*Последняя диагностика:*\n");
-        builder = new LogFilter.Builder();
-        builder.setCategory(Category.DIAGNOSTIC);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        sb.append("*Последняя ранговая:*\n");
-        builder = new LogFilter.Builder();
-        builder.setSessionType(SessionType.RANG);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        sb.append("*Последняя ранговая в СЧ1:*\n");
-        builder = new LogFilter.Builder();
-        builder.setSessionType(SessionType.RANG_SCH1);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        builder = new LogFilter.Builder();
-        builder.setSessionType(SessionType.RANG_SCH2);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        if (!lastRecords.isEmpty()) {
-            sb.append("*Последняя ранговая в СЧ2:*\n");
-            sb.append(toString(lastRecords.get(0))).append("\n\n");
-        }
-
-        sb.append("*Последний продукт GSR:*\n");
-        builder = new LogFilter.Builder();
-        builder.setCategory(Category.GSR_PRODUCT);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        sb.append("*Оплата экспертного:*\n");
-        builder = new LogFilter.Builder();
-        builder.setCategory(Category.EXPERT_SUPPORT);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        sb.append("*Оплата 1+:*\n");
-        builder = new LogFilter.Builder();
-        builder.setCategory(Category.ONE_PLUS);
-        lastRecords = logService.getLastLogs(builder.build(), 1);
-        sb.append(toString(lastRecords.get(0))).append("\n\n");
-
-        SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(sb.toString(), REMOVE_MARKUP, null, true);
-        manager.handleEvent(event);
-    }
-
-    private void sendMonthlyReport() {
-        String text = "Выберите период:";
-        // получаем список всех месяцев в gsr
-        List<YearMonth> allPeriods = logService.getAllPeriods();
-        List<String> periods = allPeriods.stream()
-                .map(yearMonth -> Utils.getMonth(yearMonth.month() - 1) + " " + yearMonth.year())
-                .toList();
-        ReplyKeyboardMarkup markup = MarkupFactory.getReplyMarkup(periods.toArray(String[]::new));
-
-        AnswerListener listener = answer -> {
-            String answerDate = (String) answer;
-            String[] parts = answerDate.split(" ");
-            String month = String.format("%02d", Utils.getMonthNumber(parts[0]) + 1);
-            String year = parts[1];
-            List<CategorySummary> categorySummary = logService.getCategorySummary(year, month);
-
-            String sb = "*Отчёт за " + answerDate + ":*\n\n" +
-                    getReportByCategories(categorySummary, true);
-
-            SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(sb, REMOVE_MARKUP, null, true);
-            manager.handleEvent(event);
-        };
-        SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(text, markup, listener, false);
-        manager.handleEvent(event);
-    }
-
-    public static String getReportByCategories(List<CategorySummary> categorySummary, boolean addTotalCount) {
-        //ToDo: добавить разделение сессий по подтипам
-        //Сессии(13): 57 200 ₽
-        //Диагностика(1): 0 ₽
-        //Всего потрачено: 57 200 ₽
-        StringBuilder sb = new StringBuilder();
-        int totalPrice = 0;
-        for (CategorySummary summary : categorySummary) {
-            sb.append("*").append(summary.category().getName()).append("*")
-                    .append(" (").append(summary.count()).append("): ")
-                    .append(Utils.formatPrice(summary.priceSum())).append("\n");
-            totalPrice += summary.priceSum();
-        }
-        if (addTotalCount) {
-            sb.append("\n").append("*Всего потрачено:* ").append(Utils.formatPrice(totalPrice));
-        }
-        return sb.toString();
-    }
-
-    // посмотреть отчеты за текущий месяц, 3, 6 месяцев или произвольно
-    private void sendMoneyByMonthReport() {
-        manager.handleEvent(new GetMonthlyReportEvent());
-    }
-
-    private void sendMoneyByCategoryReport() {
-        List<CategorySummary> categorySummary = logService.getCategorySummary(null, null);
-
-        String sb = "*Отчёт по категориям:*\n\n" +
-                getReportByCategories(categorySummary, true);
-
-        SendMeTelegramMessageEvent event = new SendMeTelegramMessageEvent(sb, REMOVE_MARKUP, null, true);
-        manager.handleEvent(event);
-    }
-
-    private String toString(Log log) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(Utils.getDate(log.date())).append(" ");
-        sb.append(log.description());
-        if (log.price() != 0) {
-            sb.append(", ").append(Utils.formatPrice(log.price()));
-        }
-        return sb.toString();
     }
 }

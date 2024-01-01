@@ -22,7 +22,7 @@ public interface LogRepository extends Repository {
 
     List<YearMonth> getAllPeriods();
 
-    List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month);
+    List<CategorySummary> getCategorySummary(@Nullable Integer year, @Nullable Integer month);
 
     List<MonthlyReport> getShortMonthlySummary(int months);
 

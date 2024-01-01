@@ -33,7 +33,7 @@ public enum Category {
                 return category;
             }
         }
-        logger.error("Нет такой категории: " + name);
+        logger.error("Нет такой категории: {}", name);
         throw new IllegalArgumentException("No enum constant with name: " + name);
     }
 }

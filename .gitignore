@@ -26,3 +26,4 @@ replay_pid*
 /src/main/resources
 /src/main/test/bot.gsr.SQLite/GSR_Test.db
 /src/main/test/resources/
+/.PVS-Studio/

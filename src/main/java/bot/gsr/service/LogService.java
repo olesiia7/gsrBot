@@ -71,7 +71,7 @@ public class LogService {
      * @param month месяц. Если {@code null}, то за любой месяц
      * @return Получаем категорию + кол-во в ней + сумма расходов
      */
-    public List<CategorySummary> getCategorySummary(@Nullable String year, @Nullable String month) {
+    public List<CategorySummary> getCategorySummary(@Nullable Integer year, @Nullable Integer month) {
         return repository.getCategorySummary(year, month);
     }
 
