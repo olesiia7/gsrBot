@@ -99,6 +99,7 @@ public class AddLogCommand extends BotCommand implements UpdateHandler {
 
     @Override
     // вводятся только описание и дата
+    //ToDo добавить запрос цены, если продукт гср и сопутствующие расходы
     public void processAction(String lastCallback, Update update, AbsSender absSender) {
         String messageText = update.getMessage().getText();
         String chatId = update.getMessage().getChatId().toString();
@@ -166,6 +167,8 @@ public class AddLogCommand extends BotCommand implements UpdateHandler {
         }
     }
 
+    //ToDo поменять на массовое удаление, когда подъедет новый релиз
+    // https://github.com/rubenlagus/TelegramBots (6.8 старый)
     private static void clearMsgToDelete(String chatId, AbsSender absSender) {
         msgsToDelete.forEach(id -> deleteMessage(chatId, id, absSender));
         msgsToDelete.clear();

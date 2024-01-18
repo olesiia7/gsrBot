@@ -6,12 +6,13 @@ import bot.gsr.handlers.EventManager;
 import bot.gsr.model.Category;
 import bot.gsr.model.Log;
 import bot.gsr.model.SessionType;
-import bot.gsr.telegram.commands.MultiPhase;
+import bot.gsr.telegram.commands.UpdateHandler;
 import bot.gsr.telegram.model.LogWithUrl;
 import bot.gsr.utils.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -29,8 +30,7 @@ import static bot.gsr.telegram.TelegramUtils.*;
 import static bot.gsr.utils.Utils.BACK_TEXT;
 
 @Component
-// ToDo переработать
-public class VerifyLogService implements MultiPhase {
+public class VerifyLogService implements UpdateHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final Set<Integer> msgToDelete = new HashSet<>();
 
@@ -42,23 +42,15 @@ public class VerifyLogService implements MultiPhase {
 
     private final EventManager eventManager;
 
-    private static CompletableFuture<Void> result;
-    private static Integer lastVerifyingMsg;
-    private static Integer lastEditingMsg;
-    private static LogWithUrl currentLogWithUrl;
+    private CompletableFuture<Void> result;
+    private Integer lastVerifyingMsg;
+    private Integer lastEditingMsg;
+    private LogWithUrl currentLogWithUrl;
+
+    private final Stage stage = new Stage();
 
     public VerifyLogService(EventManager eventManager) {
         this.eventManager = eventManager;
-    }
-
-    private enum Phase {
-        APPROVE,
-        EDIT,
-        DECLINE,
-        EDIT_CATEGORY,
-        EDIT_SESSION_TYPE,
-        EDIT_PRICE,
-        EDIT_FINISHED
     }
 
     public CompletableFuture<Void> verify(@NotNull LogWithUrl logWithUrl,
@@ -72,13 +64,14 @@ public class VerifyLogService implements MultiPhase {
         return result;
     }
 
-    public CompletableFuture<Void> verify(@NotNull Log log,
-                                          @NotNull String chatId,
-                                          @NotNull AbsSender absSender) {
-        return verify(new LogWithUrl(log, null), chatId, absSender);
+    public void verify(@NotNull Log log,
+                       @NotNull String chatId,
+                       @NotNull AbsSender absSender) {
+        verify(new LogWithUrl(log, null), chatId, absSender);
     }
 
-    private void changeVerifyingLog(String chatId, Integer messageId, LogWithUrl newLog, AbsSender absSender) {
+    private void updateLog(String chatId, Integer messageId, LogWithUrl newLog, AbsSender absSender) {
+        stage.isFinished = true;
         deleteMessage(chatId, messageId, absSender);
         if (!currentLogWithUrl.equals(newLog)) {
             currentLogWithUrl = newLog;
@@ -95,78 +88,124 @@ public class VerifyLogService implements MultiPhase {
 
     @Override
     public void processCallback(Update update, AbsSender absSender) {
-        String callback = update.getCallbackQuery().getData();
-        Phase phase = getPhase(callback);
+        String callback = getSecondCallback(update.getCallbackQuery().getData());
         String chatId = update.getCallbackQuery().getMessage().getChatId().toString();
         Integer callbackMsgId = update.getCallbackQuery().getMessage().getMessageId();
-        switch (phase) {
-            case APPROVE, DECLINE -> {
-                if (phase == Phase.APPROVE) {
-                    eventManager.handleEvent(new PublishInChannelEvent(currentLogWithUrl));
-                    eventManager.handleEvent(new AddToDbEvent(currentLogWithUrl.log()));
+
+        if (stage.isFinished) {
+            Decision decision = Decision.valueOf(callback);
+            switch (decision) {
+                case APPROVE, DECLINE -> {
+                    if (decision == Decision.APPROVE) {
+                        eventManager.handleEvent(new PublishInChannelEvent(currentLogWithUrl));
+                        eventManager.handleEvent(new AddToDbEvent(currentLogWithUrl.log()));
+                    }
+                    addDecision(update.getCallbackQuery().getMessage(), decision, absSender);
+                    currentLogWithUrl = null;
+                    result.complete(null);
                 }
-                addDecision(update.getCallbackQuery().getMessage(), phase, absSender);
-                currentLogWithUrl = null;
-                result.complete(null);
-            }
-            case EDIT -> {
-                String text = "Выберите, что вы хотите изменить:";
-                Message message = sendMessage(text, editingMarkup, false, chatId, absSender);
-                lastEditingMsg = message.getMessageId();
-            }
-            case EDIT_CATEGORY -> {
-                if (firstPhase(callback)) {
-                    editMessage(chatId, callbackMsgId, "Выберите новую категорию:", editCategoryMarkup, false, absSender);
-                    return;
+                case EDIT -> {
+                    stage.isFinished = false;
+                    stage.get();
+                    stage.item = Item.EDIT_ATTRIBUTE;
+                    processGetters(chatId, callbackMsgId, absSender);
                 }
-                Category newCategory = Category.valueOf(getSecondPhase(callback));
-                Log log = currentLogWithUrl.log();
-                // если изменилась категория, может поменяться цена и подтип
-                log = Utils.predictLog(log.description(), newCategory, log.date());
-                LogWithUrl newLogWithUrl = new LogWithUrl(new Log(log.date(), log.description(), log.price(), newCategory, log.sessionType()), currentLogWithUrl.url());
-                changeVerifyingLog(chatId, callbackMsgId, newLogWithUrl, absSender);
             }
-            case EDIT_SESSION_TYPE -> {
-                if (firstPhase(callback)) {
-                    editMessage(chatId, callbackMsgId, "Выберите новый тип сессии:", editSessionTypeMarkup, false, absSender);
-                    return;
-                }
-                SessionType newSessionType = SessionType.valueOf(getSecondPhase(callback));
-                LogWithUrl logWithUrl = currentLogWithUrl;
-                Log log = logWithUrl.log();
-                // если изменился тип сессии, то категория должна стать SESSION, цена может измениться
-                int newPrice = Utils.getSessionTypePrice(newSessionType);
-                LogWithUrl newLogWithUrl = new LogWithUrl(new Log(log.date(), log.description(), newPrice, Category.SESSION, newSessionType), logWithUrl.url());
-                changeVerifyingLog(chatId, callbackMsgId, newLogWithUrl, absSender);
+        } else if (callback.equals(BACK_TEXT)) {
+            stage.isFinished = true;
+            deleteMessage(chatId, callbackMsgId, absSender);
+        } else {
+            switch (stage.method) {
+                case GET -> processGetters(chatId, callbackMsgId, absSender);
+                case SET -> processSetters(callback, chatId, callbackMsgId, absSender);
             }
-            case EDIT_PRICE ->
-                    editMessage(chatId, callbackMsgId, "Введите новую цену (цифры без знаков и пробелов)", editingFinishedMarkup, false, absSender);
-            case EDIT_FINISHED -> deleteMessage(chatId, callbackMsgId, absSender);
         }
     }
 
     @Override
     public void processAction(String lastCallback, Update update, AbsSender absSender) {
-        // ToDo удалить все сообщения про цену
-        Phase phase = getPhase(lastCallback);
+        if (stage.item != Item.PRICE || stage.method != Method.SET) {
+            logger.error("{} {} не может быть обработан в processAction", stage.method, stage.item);
+            return;
+        }
         String text = update.getMessage().getText();
         String chatId = update.getMessage().getChatId().toString();
-        if (phase == Phase.EDIT_PRICE) {
-            Integer messageId = update.getMessage().getMessageId();
-            try {
-                int newPrice = Integer.parseInt(text);
+        Integer messageId = update.getMessage().getMessageId();
+        processSetters(text, chatId, messageId, absSender);
+    }
+
+    private void processGetters(@NotNull String chatId, @Nullable Integer callbackMsgId, @NotNull AbsSender absSender) {
+        if (stage.method != Method.GET) {
+            logger.error("{} не может быть обработан в processAction", stage.method);
+        }
+        switch (stage.item) {
+            case EDIT_ATTRIBUTE -> {
+                String text = "Выберите, что вы хотите изменить:";
+                Message message = sendMessage(text, editingMarkup, false, chatId, absSender);
+                lastEditingMsg = message.getMessageId();
+            }
+            case CATEGORY ->
+                    editMessage(chatId, callbackMsgId, "Выберите новую категорию:", editCategoryMarkup, false, absSender);
+            case SESSION_TYPE ->
+                    editMessage(chatId, callbackMsgId, "Выберите новый тип сессии:", editSessionTypeMarkup, false, absSender);
+            case PRICE ->
+                    editMessage(chatId, callbackMsgId, "Введите новую цену (цифры без знаков и пробелов)", editingFinishedMarkup, false, absSender);
+            default -> logger.error("{} не может быть обработан в processGetters", stage.item);
+        }
+        stage.set();
+    }
+
+    private void processSetters(@NotNull String callbackOrText, @NotNull String chatId, @Nullable Integer callbackOrMsgId, @NotNull AbsSender absSender) {
+        if (stage.method != Method.SET) {
+            logger.error("{} не может быть обработан в processSetters", stage.method);
+        }
+        if (callbackOrText.equals(BACK_TEXT)) {
+            stage.isFinished = true;
+            deleteMessage(chatId, callbackOrMsgId, absSender);
+            return;
+        }
+
+        switch (stage.item) {
+            case EDIT_ATTRIBUTE -> {
+                Item item = Item.valueOf(callbackOrText);
+                stage.get();
+                stage.item = item;
+                processGetters(chatId, callbackOrMsgId, absSender);
+            }
+            case CATEGORY -> {
+                Category newCategory = Category.valueOf(callbackOrText);
+                Log log = currentLogWithUrl.log();
+                // если изменилась категория, может поменяться цена и подтип
+                log = Utils.predictLog(log.description(), newCategory, log.date());
+                LogWithUrl newLogWithUrl = new LogWithUrl(new Log(log.date(), log.description(), log.price(), newCategory, log.sessionType()), currentLogWithUrl.url());
+                updateLog(chatId, callbackOrMsgId, newLogWithUrl, absSender);
+            }
+            case SESSION_TYPE -> {
+                SessionType newSessionType = SessionType.valueOf(callbackOrText);
                 LogWithUrl logWithUrl = currentLogWithUrl;
                 Log log = logWithUrl.log();
-                LogWithUrl newLogWithUrl = new LogWithUrl(new Log(log.date(), log.description(), newPrice, log.category(), log.sessionType()), logWithUrl.url());
-                msgToDelete.add(lastEditingMsg);
-                clearMsgToDelete(absSender, chatId);
-                changeVerifyingLog(chatId, messageId, newLogWithUrl, absSender);
-            } catch (NumberFormatException ex) {
-                Message message = sendMessage("Неправильный формат цены: введите цифры без знаков и пробелов", null, false, chatId, absSender);
-                logger.error("Введён неправильный формат цены (нужны цифры без знаков и пробелов): {}", text);
-                msgToDelete.add(message.getMessageId());
-                msgToDelete.add(messageId);
+                // если изменился тип сессии, то категория должна стать SESSION, цена может измениться
+                int newPrice = Utils.getSessionTypePrice(newSessionType);
+                LogWithUrl newLogWithUrl = new LogWithUrl(new Log(log.date(), log.description(), newPrice, Category.SESSION, newSessionType), logWithUrl.url());
+                updateLog(chatId, callbackOrMsgId, newLogWithUrl, absSender);
             }
+            case PRICE -> {
+                try {
+                    int newPrice = Integer.parseInt(callbackOrText);
+                    LogWithUrl logWithUrl = currentLogWithUrl;
+                    Log log = logWithUrl.log();
+                    LogWithUrl newLogWithUrl = new LogWithUrl(new Log(log.date(), log.description(), newPrice, log.category(), log.sessionType()), logWithUrl.url());
+                    msgToDelete.add(lastEditingMsg);
+                    clearMsgToDelete(absSender, chatId);
+                    updateLog(chatId, callbackOrMsgId, newLogWithUrl, absSender);
+                } catch (NumberFormatException ex) {
+                    Message message = sendMessage("Неправильный формат цены: введите цифры без знаков и пробелов", null, false, chatId, absSender);
+                    logger.error("Введён неправильный формат цены (нужны цифры без знаков и пробелов): {}", callbackOrText);
+                    msgToDelete.add(message.getMessageId());
+                    msgToDelete.add(callbackOrMsgId);
+                }
+            }
+            default -> logger.error("{} не может быть обработан в processSetters", stage.item);
         }
     }
 
@@ -175,14 +214,9 @@ public class VerifyLogService implements MultiPhase {
         msgToDelete.clear();
     }
 
-    private Phase getPhase(String callback) {
-        String[] split = callback.split(CALLBACK_DELIMITER);
-        return Phase.valueOf(split[1]);
-    }
-
-    private void addDecision(Message message, Phase phase, AbsSender absSender) {
+    private void addDecision(Message message, Decision decision, AbsSender absSender) {
         String text = message.getText();
-        text = addDecisionToMsg(text, phase);
+        text = addDecisionToMsg(text, decision);
         text = cleanText(text);
 
         editMessage(message.getChatId().toString(), message.getMessageId(), text, null, true, absSender);
@@ -210,11 +244,11 @@ public class VerifyLogService implements MultiPhase {
         return msg;
     }
 
-    private static String addDecisionToMsg(String msg, @NotNull Phase phase) {
+    private static String addDecisionToMsg(String msg, @NotNull Decision phase) {
         msg += "\n\n";
-        if (phase == Phase.APPROVE) {
+        if (phase == Decision.APPROVE) {
             msg += "✅ Одобрено";
-        } else if (phase == Phase.DECLINE) {
+        } else if (phase == Decision.DECLINE) {
             msg += "❌ Пропущено";
         }
         return msg;
@@ -230,18 +264,18 @@ public class VerifyLogService implements MultiPhase {
         List<InlineKeyboardButton> row1btns = new ArrayList<>();
         InlineKeyboardButton approveBtn = new InlineKeyboardButton();
         approveBtn.setText(approveButtonText);
-        approveBtn.setCallbackData(getCallback(Phase.APPROVE.name()));
+        approveBtn.setCallbackData(getCallback(Decision.APPROVE.name()));
         row1btns.add(approveBtn);
 
         InlineKeyboardButton declineBtn = new InlineKeyboardButton();
         declineBtn.setText(declineButtonText);
-        declineBtn.setCallbackData(getCallback(Phase.DECLINE.toString()));
+        declineBtn.setCallbackData(getCallback(Decision.DECLINE.toString()));
 
         row1btns.add(declineBtn);
 
         InlineKeyboardButton editBtn = new InlineKeyboardButton();
         editBtn.setText(editButtonText);
-        editBtn.setCallbackData(getCallback(Phase.EDIT.name()));
+        editBtn.setCallbackData(getCallback(Decision.EDIT.name()));
         row1btns.add(editBtn);
 
         buttons.add(row1btns);
@@ -255,17 +289,17 @@ public class VerifyLogService implements MultiPhase {
         String editSessionPriceButtonText = "Цена";
 
         List<Pair<String, String>> buttons = new ArrayList<>();
-        buttons.add(Pair.of(editCategoryButtonText, getCallback(Phase.EDIT_CATEGORY.name())));
-        buttons.add(Pair.of(editSessionTypeButtonText, getCallback(Phase.EDIT_SESSION_TYPE.name())));
-        buttons.add(Pair.of(editSessionPriceButtonText, getCallback(Phase.EDIT_PRICE.name())));
-        buttons.add(Pair.of(BACK_TEXT, getCallback(Phase.EDIT_FINISHED.name())));
+        buttons.add(Pair.of(editCategoryButtonText, getCallback(Item.CATEGORY.name())));
+        buttons.add(Pair.of(editSessionTypeButtonText, getCallback(Item.SESSION_TYPE.name())));
+        buttons.add(Pair.of(editSessionPriceButtonText, getCallback(Item.PRICE.name())));
+        buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
 
         return getInlineMarkup(buttons);
     }
 
     private InlineKeyboardMarkup getEditCategoryMarkup() {
         return createChooseCategoryMarkup(
-                category -> getCallback(Phase.EDIT_CATEGORY.name(), category),
+                this::getCallback,
                 getCallbackName(),
                 Collections.emptyList());
     }
@@ -274,15 +308,47 @@ public class VerifyLogService implements MultiPhase {
         List<Pair<String, String>> buttons = new ArrayList<>();
         Arrays.stream(SessionType.values())
                 .forEach(sessionType -> buttons.add(Pair.of(sessionType.getName(),
-                        getCallback(Phase.EDIT_SESSION_TYPE.name(), sessionType.name()))));
+                        getCallback(sessionType.name()))));
 
-        buttons.add(Pair.of(BACK_TEXT, getCallback(Phase.EDIT_FINISHED.name())));
+        buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
         return getInlineMarkup(buttons);
     }
 
     private InlineKeyboardMarkup getEditingFinished() {
         List<Pair<String, String>> buttons = new ArrayList<>();
-        buttons.add(Pair.of(BACK_TEXT, getCallback(Phase.EDIT_FINISHED.name())));
+        buttons.add(Pair.of(BACK_TEXT, getCallback(BACK_TEXT)));
         return getInlineMarkup(buttons);
+    }
+
+    private enum Method {
+        GET, // вывести сообщение для получения объекта
+        SET // распарсить объект
+    }
+
+    private enum Item {
+        EDIT_ATTRIBUTE,
+        CATEGORY,
+        SESSION_TYPE,
+        PRICE
+    }
+
+    private enum Decision {
+        APPROVE,
+        DECLINE,
+        EDIT
+    }
+
+    private static class Stage {
+        VerifyLogService.Method method;
+        Item item;
+        boolean isFinished = true; // если true – то нет предыдущих стадий
+
+        protected void set() {
+            this.method = Method.SET;
+        }
+
+        protected void get() {
+            this.method = Method.GET;
+        }
     }
 }
