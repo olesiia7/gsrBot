@@ -37,6 +37,7 @@ public class PublishInChannelHandler {
         }
         String formattedMessage = formatPageMessage(logWithUrl.log().description(), logWithUrl.log().date(), url);
         telegramController.sendMessage(formattedMessage);
-        logger.info(logWithUrl.channelLog());
+        String log = logWithUrl.channelLog();
+        logger.debug(log);
     }
 }

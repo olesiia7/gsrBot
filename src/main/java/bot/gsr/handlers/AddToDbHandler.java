@@ -34,6 +34,7 @@ public class AddToDbHandler {
         }
         Log log = event.log();
         logService.addLog(log);
-        logger.info(Utils.getCSV(event.log()));
+        String csv = Utils.getCSV(event.log());
+        logger.debug(csv);
     }
 }

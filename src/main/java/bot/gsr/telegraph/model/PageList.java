@@ -15,9 +15,6 @@ public class PageList implements TelegraphObject {
     @JsonProperty(PAGES_FIELD)
     private List<Page> pages;
 
-    public PageList() {
-    }
-
     public Integer getTotalCount() {
         return totalCount;
     }

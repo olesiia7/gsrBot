@@ -16,7 +16,7 @@ public interface UpdateHandler {
 
     void processCallback(@NotNull Update update, @NotNull AbsSender absSender);
 
-    void processAction(String lastCallback, @NotNull Update update, @NotNull AbsSender absSender);
+    void processAction(@NotNull Update update, @NotNull AbsSender absSender);
 
     default String getCallback(@NotNull String stage) {
         return getCallbackName() + CALLBACK_DELIMITER + stage;

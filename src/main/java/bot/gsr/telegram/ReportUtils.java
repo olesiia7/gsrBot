@@ -105,7 +105,6 @@ public final class ReportUtils {
     }
 
     private static String getReportByCategories(List<CategorySummary> categorySummary, boolean addTotalCount) {
-        //ToDo: добавить разделение сессий по подтипам
         // ToDo: сделать ровненько табличкой
         //Сессии(13): 57 200 ₽
         //Диагностика(1): 0 ₽

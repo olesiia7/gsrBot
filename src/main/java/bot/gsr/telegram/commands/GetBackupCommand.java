@@ -41,8 +41,11 @@ public class GetBackupCommand extends BotCommand {
             sendDocument.setDocument(new InputFile(inputStream, "dump.csv"));
             absSender.execute(sendDocument);
 
-        } catch (TelegramApiException | ExecutionException | InterruptedException e) {
+        } catch (TelegramApiException | ExecutionException e) {
             logger.error("Ошибка при при отправке бэкапа: {}", e.getMessage());
+        } catch (InterruptedException e) {
+            logger.error("Ошибка при при отправке бэкапа: {}", e.getMessage());
+            Thread.currentThread().interrupt();
         }
     }
 }

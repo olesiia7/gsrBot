@@ -124,7 +124,7 @@ public class VerifyLogService implements UpdateHandler {
     }
 
     @Override
-    public void processAction(String lastCallback, Update update, AbsSender absSender) {
+    public void processAction(Update update, AbsSender absSender) {
         if (stage.item != Item.PRICE || stage.method != Method.SET) {
             logger.error("{} {} не может быть обработан в processAction", stage.method, stage.item);
             return;

@@ -211,7 +211,7 @@ public class QueryCommand extends BotCommand implements UpdateHandler {
     }
 
     @Override
-    public void processAction(String lastCallback, Update update, AbsSender absSender) {
+    public void processAction(Update update, AbsSender absSender) {
         if (stage != Stage.SET_MONEY_BY_MONTH_PERIOD) {
             logger.error("{} не может обрабатываться в processAction", stage);
             return;

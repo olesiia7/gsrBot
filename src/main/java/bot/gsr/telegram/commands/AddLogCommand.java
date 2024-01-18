@@ -100,7 +100,7 @@ public class AddLogCommand extends BotCommand implements UpdateHandler {
     @Override
     // вводятся только описание и дата
     //ToDo добавить запрос цены, если продукт гср и сопутствующие расходы
-    public void processAction(String lastCallback, Update update, AbsSender absSender) {
+    public void processAction(Update update, AbsSender absSender) {
         String messageText = update.getMessage().getText();
         String chatId = update.getMessage().getChatId().toString();
         Integer messageId = update.getMessage().getMessageId();

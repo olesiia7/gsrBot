@@ -35,17 +35,17 @@ public final class Bot extends TelegramLongPollingCommandBot {
 
     @Override
     public void processNonCommandUpdate(Update update) {
-        Long chatId;
         if (update.hasCallbackQuery()) {
-            chatId = update.getCallbackQuery().getMessage().getChatId();
+            Long chatId = update.getCallbackQuery().getMessage().getChatId();
             List<UpdateHandler> foundCommandHandlers = updateHandlers.stream()
                     .filter(commandHandler -> commandHandler.canProcessUpdate(update.getCallbackQuery().getData()))
                     .toList();
 
             if (foundCommandHandlers.size() != 1) {
-                logger.error("Не удалось правильно определить commandHandler. Список подходящих: {}", foundCommandHandlers.stream()
+                String handlers = foundCommandHandlers.stream()
                         .map(UpdateHandler::getCallbackName)
-                        .collect(Collectors.joining(", ")));
+                        .collect(Collectors.joining(", "));
+                logger.error("Не удалось правильно определить commandHandler. Список подходящих: {}", handlers);
                 return;
             }
 
@@ -54,7 +54,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
         }
 
         if (update.hasMessage()) {
-            chatId = update.getMessage().getChatId();
+            Long chatId = update.getMessage().getChatId();
             String lastCallback = lastCallbacks.get(chatId);
 
             List<UpdateHandler> foundCommandHandlers = updateHandlers.stream()
@@ -62,13 +62,14 @@ public final class Bot extends TelegramLongPollingCommandBot {
                     .toList();
 
             if (foundCommandHandlers.size() != 1) {
-                logger.error("Не удалось правильно определить commandHandler. Список подходящих: {}", foundCommandHandlers.stream()
+                String handlers = foundCommandHandlers.stream()
                         .map(UpdateHandler::getCallbackName)
-                        .collect(Collectors.joining(", ")));
+                        .collect(Collectors.joining(", "));
+                logger.error("Не удалось правильно определить commandHandler. Список подходящих: {}", handlers);
                 return;
             }
 
-            foundCommandHandlers.get(0).processAction(lastCallback, update, this);
+            foundCommandHandlers.get(0).processAction(update, this);
         }
     }
 

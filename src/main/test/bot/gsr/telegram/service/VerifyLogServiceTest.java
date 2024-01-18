@@ -285,13 +285,12 @@ class VerifyLogServiceTest extends TelegramTest {
         assertEquals(1, editPriceMarkup.getKeyboard().get(0).size());
 
 
-        String lastCallback = update.getCallbackQuery().getData();
         Message message = mock(Message.class);
         when(message.getChatId()).thenReturn(2L);
         when(message.getMessageId()).thenReturn(3);
         when(message.getText()).thenReturn("10 000"); // неправильная цена
         when(update.getMessage()).thenReturn(message);
-        verifyLogService.processAction(lastCallback, update, absSender);
+        verifyLogService.processAction(update, absSender);
 
         telegramUtilsMock.verify(() -> TelegramUtils.sendMessage(
                 eq("Неправильный формат цены: введите цифры без знаков и пробелов"),
@@ -302,9 +301,9 @@ class VerifyLogServiceTest extends TelegramTest {
 
         when(message.getText()).thenReturn("10000"); // правильная цена
         when(update.getMessage()).thenReturn(message);
-        verifyLogService.processAction(lastCallback, update, absSender);
+        verifyLogService.processAction(update, absSender);
 
-        telegramUtilsMock.verify(() -> TelegramUtils.deleteMessage("2", 3, absSender), times(3));
+        telegramUtilsMock.verify(() -> TelegramUtils.deleteMessage("2", 3, absSender), times(2));
 
         String expected = """
                 Сессия: *desc*

@@ -20,7 +20,7 @@ import static bot.gsr.model.SessionType.*;
 
 
 public final class Utils {
-    public static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель",
+    private static final List<String> MONTH_NAMES = Arrays.asList("Январь", "Февраль", "Март", "Апрель",
             "Май", "Июнь", "Июль", "Август",
             "Сентябрь", "Октябрь", "Ноябрь", "Декабрь");
     public static final List<String> SHORT_MONTH_NAMES = Arrays.asList("Янв", "Фев", "Март", "Апр",
