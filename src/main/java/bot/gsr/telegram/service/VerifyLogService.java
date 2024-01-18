@@ -103,6 +103,7 @@ public class VerifyLogService implements UpdateHandler {
                     addDecision(update.getCallbackQuery().getMessage(), decision, absSender);
                     currentLogWithUrl = null;
                     result.complete(null);
+                    stage.isFinished = true;
                 }
                 case EDIT -> {
                     stage.isFinished = false;
